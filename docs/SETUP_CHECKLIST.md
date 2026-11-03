@@ -46,6 +46,16 @@ cd ~/Projects/feedback-tool && caffeinate -i claude "$(cat KICKOFF_PROMPT.md)"
 - `caffeinate -i` keeps your Mac from sleeping while it works. Keep the laptop plugged in and the Terminal window open (closing the lid is fine on power only if your Mac is set to not sleep).
 - The bundled `.claude/settings.json` pre-approves routine commands. If it asks about something else, approve it if it makes sense; it will never ask for `sudo`.
 
+### Usage & cost safety (do once)
+1. Make sure Claude Code bills your **subscription**, not a pay-per-use API key. This should print an empty line:
+   ```bash
+   echo "$ANTHROPIC_API_KEY"
+   ```
+   If it prints a key, run `unset ANTHROPIC_API_KEY` and remove it from `~/.zprofile`/`~/.zshrc`.
+2. In claude.ai → Settings → Usage, keep **extra usage / usage credits turned off**. Then hitting a limit just pauses the work — it never charges more.
+3. Inside Claude Code, type `/status` to see your plan and usage, and `/config` to confirm **"Continue automatically at usage limit"** is on (needs a recent version; update with `claude update`). With it on, the session waits at the limit and resumes when your usage resets — just leave the Terminal window open and the Mac awake.
+4. If it ever stops anyway, resume with `cd ~/Projects/feedback-tool && caffeinate -i claude --continue` — all progress is in git and `docs/PROGRESS.md`, so nothing is lost.
+
 ### 6. Check in occasionally
 Open these in the project folder (`open ~/Projects/feedback-tool/docs`):
 - `PROGRESS.md` — what's done

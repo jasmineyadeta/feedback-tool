@@ -10,6 +10,11 @@ You are building the Contextual Feedback MVP autonomously, **locally on Jas's Ma
 5. Write `docs/changelog/{date}-{slug}.md`: what/why, acceptance items covered, Playwright screenshots (chromium + webkit-iphone) saved under `docs/changelog/img/`, manual checks added to `docs/MANUAL_CHECKS.md`, known limitations.
 6. `pnpm merge-task`. Tick `docs/PROGRESS.md`. If a GitHub remote named `origin` exists, `git push origin main` (never force-push). Continue.
 
+## Usage efficiency
+- Jas is on a Claude subscription with usage limits. Be frugal: don't re-read the full PRD/SPEC every task — read only the SPEC sections relevant to the current item. Prefer targeted file reads and searches over dumping large files or logs.
+- Keep `docs/PROGRESS.md` current after every merge so work can resume cleanly after a usage-limit pause or a new session (`claude --continue`).
+- Never set or use an `ANTHROPIC_API_KEY`.
+
 ## Merge guardrails (D24)
 - Only `pnpm merge-task` merges to `main`, and only on green `pnpm verify`.
 - **Never** delete, skip (`.skip`, `test.fixme`), or weaken an existing test, lower a coverage/axe threshold, or edit `pnpm verify`/`merge-task` to make it pass. If you believe a test is wrong, leave the branch unmerged and add it to `docs/NEEDS_HUMAN.md`.
