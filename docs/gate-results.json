@@ -1,0 +1,579 @@
+{
+  "date": "2026-11-03",
+  "rate": 0.8,
+  "framer": 3,
+  "webflow": 3,
+  "gatePass": true,
+  "rows": [
+    {
+      "url": "https://jason-ng.space/",
+      "guess": "framer",
+      "platform": "framer",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 769,
+        "platform": "framer"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12572
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 13117
+      }
+    },
+    {
+      "url": "https://brycewillem.design/",
+      "guess": "framer",
+      "platform": "framer",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 540,
+        "platform": "framer"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12671
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12867
+      }
+    },
+    {
+      "url": "https://tycjan.com/",
+      "guess": "framer",
+      "platform": "framer",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 1040,
+        "platform": "framer"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12620
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12935
+      }
+    },
+    {
+      "url": "https://www.niklasbubori.com/",
+      "guess": "webflow",
+      "platform": "webflow",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": "SAMEORIGIN",
+        "csp": true,
+        "redirect": null,
+        "ms": 1042,
+        "platform": "webflow"
+      },
+      "chromium": {
+        "pass": false,
+        "reason": "failed: interaction",
+        "steps": {
+          "render": true,
+          "interaction": false,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 20109
+      },
+      "webkit-iphone": {
+        "pass": false,
+        "reason": "failed: interaction",
+        "steps": {
+          "render": true,
+          "interaction": false,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 19668
+      }
+    },
+    {
+      "url": "https://www.ginayu.design/",
+      "guess": "webflow",
+      "platform": "webflow",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": "SAMEORIGIN",
+        "csp": true,
+        "redirect": null,
+        "ms": 362,
+        "platform": "webflow"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12811
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12660
+      }
+    },
+    {
+      "url": "https://www.havananguyen.com/",
+      "guess": "squarespace",
+      "platform": "squarespace",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 657,
+        "platform": "squarespace"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 15483
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 15848
+      }
+    },
+    {
+      "url": "https://www.sophiewestfall.com/",
+      "guess": "wix",
+      "platform": "wix",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 371,
+        "platform": "wix"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12572
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12712
+      }
+    },
+    {
+      "url": "https://brittanychiang.com/",
+      "guess": "custom-react",
+      "platform": "next",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 346,
+        "platform": "next"
+      },
+      "chromium": {
+        "pass": false,
+        "reason": "failed: interaction",
+        "steps": {
+          "render": true,
+          "interaction": false,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 15326
+      },
+      "webkit-iphone": {
+        "pass": false,
+        "reason": "failed: interaction",
+        "steps": {
+          "render": true,
+          "interaction": false,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 14467
+      }
+    },
+    {
+      "url": "https://www.joshwcomeau.com/",
+      "guess": "custom-next",
+      "platform": "next",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 246,
+        "platform": "next"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12512
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12354
+      }
+    },
+    {
+      "url": "https://rauno.me/",
+      "guess": "custom-next",
+      "platform": "next",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": "SAMEORIGIN",
+        "csp": false,
+        "redirect": null,
+        "ms": 406,
+        "platform": "next"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12550
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12287
+      }
+    },
+    {
+      "url": "https://leerob.com/",
+      "guess": "custom-next",
+      "platform": "next",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 363,
+        "platform": "next"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12779
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12553
+      }
+    },
+    {
+      "url": "https://www.thaisafernandes.com/",
+      "guess": "unknown",
+      "platform": "react",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 391,
+        "platform": "react"
+      },
+      "chromium": {
+        "pass": false,
+        "reason": "failed: interaction",
+        "steps": {
+          "render": true,
+          "interaction": false,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 9841
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12779
+      }
+    },
+    {
+      "url": "https://www.justinhinh.com/",
+      "guess": "unknown",
+      "platform": "webflow",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": true,
+        "redirect": null,
+        "ms": 229,
+        "platform": "webflow"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12616
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12607
+      }
+    },
+    {
+      "url": "https://danshettysite.webflow.io/",
+      "guess": "webflow",
+      "platform": "webflow",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": true,
+        "redirect": null,
+        "ms": 206,
+        "platform": "webflow"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12281
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12191
+      }
+    },
+    {
+      "url": "https://omololaodunowo.netlify.app/",
+      "guess": "static-netlify",
+      "platform": "static",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 680,
+        "platform": "static"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12671
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12296
+      }
+    }
+  ]
+}

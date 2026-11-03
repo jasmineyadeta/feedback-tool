@@ -17,9 +17,9 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [x] `ALLOW_FIXTURE_HOSTS` honored only when `ENVIRONMENT=test` (unit test proves it's ignored otherwise)
 - [x] Fixtures: static, SPA w/ client router, CSP+XFO, service worker, forms, animations/canvas
 - [x] ✅ Fixture e2e green
-- [ ] `pnpm gate` script → `docs/PLATFORM_SUPPORT.md`
-- [ ] ✅ Gate report committed
-- [ ] ✅ D3 rule applied (Screenshot mode auto-chosen for failing platform fingerprints if below threshold)
+- [x] `pnpm gate` script → `docs/PLATFORM_SUPPORT.md`
+- [x] ✅ Gate report committed
+- [x] ✅ D3 rule applied (Screenshot mode auto-chosen for failing platform fingerprints if below threshold)
 
 ## M2 — PDF review end to end (typed comments)
 - [ ] Owner magic-link auth (local inbox) + dev-only sign-in shortcut, with test proving it's absent in production
@@ -71,6 +71,11 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 ---
 
 ## Milestone summaries
+
+### M1 — done (2026-11-03)
+**Works:** document proxy (wrangler dev) with HMAC tokens, SSRF guard, path-preserving `__enter` flow, HTML rewriting, header stripping, rate limits; overlay (39 KB) with SPA history patch, SW/form blocking, record/pick modes, taps, timeline snapshots, anchor show/locate; anchoring with SPEC §4.3 fallback order; 6 fixtures × 9 e2e tests in both browsers; live gate 80% (12/15), D3 pass → live by default.
+**Doesn't yet:** proxy isn't wired into the reviewer/owner UI (M4); per-review health check + Screenshot mode UI (M4).
+**Manual checks pending for Jas:** none for M1.
 
 ### M0 — done (2026-11-03)
 **Works:** pnpm monorepo (`apps/web` Next 16, `apps/proxy` Worker stub, `packages/{shared,anchoring,overlay}`); full schema + RLS migration; RLS tests against local Supabase (cross-owner isolation, comments hidden until submit, owners can't rewrite reviewer text, rate-limit token bucket); D30 registry with mock adapters (+ local Mailer via Mailpit and local ProxyHost); `pnpm setup` (idempotent), `dev`, `dev:stop`, `dev:phone`, `verify`, `merge-task`.
