@@ -13,10 +13,10 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [x] ✅ `pnpm setup` re-run is a no-op
 
 ## M1 — Proxy feasibility gate
-- [ ] Worker: token verification, SSRF guard, rewriting, overlay ready/tap/nav messages
-- [ ] `ALLOW_FIXTURE_HOSTS` honored only when `ENVIRONMENT=test` (unit test proves it's ignored otherwise)
-- [ ] Fixtures: static, SPA w/ client router, CSP+XFO, service worker, forms, animations/canvas
-- [ ] ✅ Fixture e2e green
+- [x] Worker: token verification, SSRF guard, rewriting, overlay ready/tap/nav messages
+- [x] `ALLOW_FIXTURE_HOSTS` honored only when `ENVIRONMENT=test` (unit test proves it's ignored otherwise)
+- [x] Fixtures: static, SPA w/ client router, CSP+XFO, service worker, forms, animations/canvas
+- [x] ✅ Fixture e2e green
 - [ ] `pnpm gate` script → `docs/PLATFORM_SUPPORT.md`
 - [ ] ✅ Gate report committed
 - [ ] ✅ D3 rule applied (Screenshot mode auto-chosen for failing platform fingerprints if below threshold)

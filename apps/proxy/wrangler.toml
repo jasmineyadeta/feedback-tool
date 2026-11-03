@@ -6,3 +6,12 @@ workers_dev = false
 
 [vars]
 ENVIRONMENT = "development"
+
+# Used by e2e (port 8788). Fixture hosts are honored only because ENVIRONMENT=test here.
+[env.test]
+name = "ft-proxy-test"
+[env.test.vars]
+ENVIRONMENT = "test"
+ALLOW_FIXTURE_HOSTS = "localhost:4601,localhost:4602,localhost:4603,localhost:4604,localhost:4605,localhost:4606"
+APP_ORIGIN = "http://localhost:3100"
+ALLOWED_APP_ORIGINS = "http://localhost:3100"

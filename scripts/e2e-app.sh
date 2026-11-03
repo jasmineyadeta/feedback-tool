@@ -7,6 +7,8 @@ export NODE_ENV=production MOCK_AI=1 TRANSCRIBER=mock ANCHOR_RESOLVER=mock SCREE
 export APP_ORIGIN=http://localhost:3100 PROXY_ORIGIN=http://localhost:8788
 export SUPABASE_URL="$(sb_env API_URL)" SUPABASE_ANON_KEY="$(sb_env ANON_KEY)" SUPABASE_SERVICE_ROLE_KEY="$(sb_env SERVICE_ROLE_KEY)"
 export PROXY_TOKEN_SECRET="e2e-$(proxy_secret)" MAIL_OUTBOX_DIR="$RUN_DIR/e2e-outbox"
+export ENVIRONMENT=test ENABLE_TEST_HARNESS=1
+export ALLOW_FIXTURE_HOSTS=localhost:4601,localhost:4602,localhost:4603,localhost:4604,localhost:4605,localhost:4606
 mkdir -p "$MAIL_OUTBOX_DIR"
 if [ ! -f apps/web/.next/BUILD_ID ]; then pnpm --filter @ft/web build; fi
 exec pnpm --filter @ft/web exec next start --port 3100

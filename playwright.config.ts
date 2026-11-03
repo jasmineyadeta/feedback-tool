@@ -32,6 +32,12 @@ export default defineConfig({
       timeout: 120_000,
       stdout: 'pipe',
     },
+    {
+      command: 'bash scripts/e2e-proxy.sh',
+      url: `${PROXY}/__ping`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
   ],
   metadata: { APP, PROXY, FIXTURES },
 });

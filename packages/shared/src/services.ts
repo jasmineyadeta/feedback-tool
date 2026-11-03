@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod/mini';
 import { Timeline, TranscriptWord } from './timeline';
 
 /**
@@ -16,13 +16,13 @@ export interface Transcriber {
 
 /** What the LLM is allowed to return (SPEC §5.2 step 2). Validated with zod. */
 export const ResolverSpan = z.object({
-  startWord: z.number().int().nonnegative(),
-  endWord: z.number().int().nonnegative(),
-  eid: z.string().max(40).nullable(),
-  confidence: z.number().min(0).max(1),
+  startWord: z.int().check(z.gte(0)),
+  endWord: z.int().check(z.gte(0)),
+  eid: z.nullable(z.string().check(z.maxLength(40))),
+  confidence: z.number().check(z.gte(0), z.lte(1)),
 });
 export type ResolverSpan = z.infer<typeof ResolverSpan>;
-export const ResolverOutput = z.object({ spans: z.array(ResolverSpan).max(200) });
+export const ResolverOutput = z.object({ spans: z.array(ResolverSpan).check(z.maxLength(200)) });
 export type ResolverOutput = z.infer<typeof ResolverOutput>;
 
 export type ResolverSegmentInput = {

@@ -5,7 +5,7 @@ out/
 coverage/
 .turbo/
 .wrangler/
-.dev.vars
+.dev.vars*
 .env
 .env.*
 !.env.example
@@ -21,3 +21,4 @@ supabase/.branches
 supabase/.temp
 next-env.d.ts
 *.tsbuildinfo
+src/generated/

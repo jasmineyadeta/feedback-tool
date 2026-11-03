@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 8787 --ip 127.0.0.1",
-    "typecheck": "tsc -p tsconfig.json"
+    "gen": "pnpm --filter @ft/overlay build && node scripts-gen-overlay.mjs",
+    "dev": "node scripts-gen-overlay.mjs && wrangler dev --port 8787 --ip 127.0.0.1",
+    "dev:test": "node scripts-gen-overlay.mjs && wrangler dev --port 8788 --ip 127.0.0.1 --env test",
+    "typecheck": "node scripts-gen-overlay.mjs && tsc -p tsconfig.json"
   },
   "dependencies": {
     "@ft/shared": "workspace:*"

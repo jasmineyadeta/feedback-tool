@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod/mini';
 import { Anchor } from './anchor';
 import { TimelineSnapshot, TimelineTap } from './timeline';
 
@@ -8,19 +8,20 @@ import { TimelineSnapshot, TimelineTap } from './timeline';
  * Both sides MUST check event.origin before parsing (SPEC §7).
  */
 const base = { ft: z.literal(1) };
+const str = (max: number) => z.string().check(z.maxLength(max));
 
 export const OverlayToShell = z.discriminatedUnion('type', [
   z.object({
     ...base,
     type: z.literal('overlay:ready'),
-    pagePath: z.string().max(2048),
-    title: z.string().max(300),
+    pagePath: str(2048),
+    title: str(300),
   }),
   z.object({
     ...base,
     type: z.literal('nav'),
-    pagePath: z.string().max(2048),
-    title: z.string().max(300),
+    pagePath: str(2048),
+    title: str(300),
   }),
   z.object({ ...base, type: z.literal('timeline'), snapshot: TimelineSnapshot }),
   z.object({ ...base, type: z.literal('tap'), tap: TimelineTap }),
@@ -28,16 +29,16 @@ export const OverlayToShell = z.discriminatedUnion('type', [
   z.object({
     ...base,
     type: z.literal('anchor:located'),
-    requestId: z.string().max(64),
+    requestId: str(64),
     found: z.boolean(),
     method: z.enum(['textQuote', 'cssPath', 'rect', 'none']),
   }),
-  z.object({ ...base, type: z.literal('external-link'), host: z.string().max(253) }),
+  z.object({ ...base, type: z.literal('external-link'), host: str(253) }),
   z.object({
     ...base,
     type: z.literal('error'),
-    code: z.string().max(64),
-    message: z.string().max(300),
+    code: str(64),
+    message: str(300),
   }),
 ]);
 export type OverlayToShell = z.infer<typeof OverlayToShell>;
@@ -45,20 +46,22 @@ export type OverlayToShell = z.infer<typeof OverlayToShell>;
 export const ShellToOverlay = z.discriminatedUnion('type', [
   z.object({ ...base, type: z.literal('rec:start'), baseline: z.number() }),
   z.object({ ...base, type: z.literal('rec:stop') }),
+  // Shell attached its listener: overlay re-announces overlay:ready (avoids a load/hydration race).
+  z.object({ ...base, type: z.literal('ping') }),
   z.object({ ...base, type: z.literal('pick:start') }), // one-shot tap-to-anchor (typed comment)
   z.object({ ...base, type: z.literal('pick:cancel') }),
   z.object({
     ...base,
     type: z.literal('anchor:show'),
-    requestId: z.string().max(64),
+    requestId: str(64),
     anchor: Anchor,
-    label: z.string().max(8),
+    label: str(8),
   }),
   z.object({ ...base, type: z.literal('anchor:clear') }),
   z.object({
     ...base,
     type: z.literal('markers:set'),
-    markers: z.array(z.object({ anchor: Anchor, label: z.string().max(8) })).max(60),
+    markers: z.array(z.object({ anchor: Anchor, label: str(8) })).check(z.maxLength(60)),
   }),
 ]);
 export type ShellToOverlay = z.infer<typeof ShellToOverlay>;

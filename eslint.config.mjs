@@ -16,6 +16,8 @@ export default tseslint.config(
       'apps/proxy/fixtures/**',
       '**/next-env.d.ts',
       'supabase/**',
+      '.run/**',
+      '**/generated/**',
       'docs/**',
     ],
   },

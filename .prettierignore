@@ -7,3 +7,4 @@ apps/proxy/fixtures
 CLAUDE.md
 KICKOFF_PROMPT.md
 .claude/
+**/generated

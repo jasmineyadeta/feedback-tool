@@ -1,0 +1,4 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline-first</title>
+<link rel="stylesheet" href="/style.css"></head><body><nav><a href="/">Home</a> · <a href="/about.html">About</a> · <a href="#contact">Contact</a> · <a href="https://example.org/elsewhere">Elsewhere</a> <button id="menu" onclick="document.getElementById(&quot;drawer&quot;).hidden=!document.getElementById(&quot;drawer&quot;).hidden">Menu</button></nav><div id="drawer" hidden><p>Drawer opened</p></div>
+<h1>Service worker site</h1><section><h2>Notes app</h2><p>Works offline thanks to a service worker.</p></section><script>navigator.serviceWorker && navigator.serviceWorker.register("/sw.js").then(()=>document.body.dataset.sw="registered").catch(()=>document.body.dataset.sw="blocked")</script>
+</body></html>
