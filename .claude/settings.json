@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)", "Bash(npm:*)", "Bash(npx:*)", "Bash(node:*)", "Bash(corepack:*)",
+      "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)", "Bash(git add:*)", "Bash(git commit:*)",
+      "Bash(git checkout:*)", "Bash(git switch:*)", "Bash(git branch:*)", "Bash(git merge:*)", "Bash(git stash:*)", "Bash(git push origin main)",
+      "Bash(brew install:*)", "Bash(brew list:*)", "Bash(brew info:*)", "Bash(brew services:*)", "Bash(brew tap supabase/tap)",
+      "Bash(docker ps:*)", "Bash(docker info:*)", "Bash(supabase start:*)", "Bash(supabase stop:*)", "Bash(supabase status:*)", "Bash(supabase db:*)", "Bash(supabase migration:*)", "Bash(supabase gen:*)",
+      "Bash(ollama:*)", "Bash(whisper-server:*)", "Bash(whisper-cli:*)", "Bash(ffmpeg:*)", "Bash(ffprobe:*)", "Bash(cloudflared tunnel --url:*)",
+      "Bash(wrangler dev:*)", "Bash(python3 -m venv:*)", "Bash(.venv/bin/pip:*)",
+      "Bash(sysctl:*)", "Bash(df:*)", "Bash(uname:*)", "Bash(lsof -i:*)", "Bash(curl -s http://localhost:*)",
+      "Bash(ls:*)", "Bash(mkdir:*)", "Bash(cat:*)", "Bash(grep:*)", "Bash(rg:*)",
+      "Edit", "Write", "Read", "Glob", "Grep"
+    ],
+    "deny": [
+      "Bash(sudo:*)", "Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(git reset --hard:*)",
+      "Bash(wrangler login:*)", "Bash(wrangler deploy:*)", "Bash(supabase login:*)", "Bash(vercel:*)",
+      "Bash(rm -rf /*)", "Bash(rm -rf ~*)", "Read(~/.ssh/**)", "Read(~/.aws/**)"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "_note": "Platforms are inferred from the showcase each came from and are UNVERIFIED. Gate harness step 1 records actual status, platform fingerprint, X-Frame-Options/CSP, and pass/fail. Jas will append real student portfolios before the pilot.",
+  "sites": [
+    { "url": "https://jason-ng.space/", "role": "designer", "platform_guess": "framer", "source": "framer.com/community/gallery" },
+    { "url": "https://brycewillem.design/", "role": "designer", "platform_guess": "framer", "source": "framer.com/community/gallery" },
+    { "url": "https://tycjan.com/", "role": "designer", "platform_guess": "framer", "source": "framer.com/community/gallery" },
+    { "url": "https://www.niklasbubori.com/", "role": "designer", "platform_guess": "webflow", "source": "webflow.com/blog/ux-design-portfolio" },
+    { "url": "https://www.ginayu.design/", "role": "designer", "platform_guess": "webflow", "source": "webflow.com/blog/ux-design-portfolio" },
+    { "url": "https://www.havananguyen.com/", "role": "designer", "platform_guess": "squarespace", "source": "sparkplugin.com squarespace-ux-portfolio" },
+    { "url": "https://www.sophiewestfall.com/", "role": "designer", "platform_guess": "wix", "source": "wix.com/blog/ux-portfolio-examples" },
+    { "url": "https://brittanychiang.com/", "role": "engineer", "platform_guess": "custom-react", "source": "well-known" },
+    { "url": "https://www.joshwcomeau.com/", "role": "engineer", "platform_guess": "custom-next", "source": "well-known; highly interactive" },
+    { "url": "https://rauno.me/", "role": "engineer", "platform_guess": "custom-next", "source": "well-known; design engineer" },
+    { "url": "https://leerob.com/", "role": "engineer", "platform_guess": "custom-next", "source": "well-known" },
+    { "url": "https://www.thaisafernandes.com/", "role": "pm", "platform_guess": "unknown", "source": "careerfoundry PM portfolio guide" },
+    { "url": "https://www.justinhinh.com/", "role": "pm", "platform_guess": "unknown", "source": "careerfoundry PM portfolio guide" },
+    { "url": "https://danshettysite.webflow.io/", "role": "pm", "platform_guess": "webflow", "source": "careerfoundry PM portfolio guide" },
+    { "url": "https://omololaodunowo.netlify.app/", "role": "pm", "platform_guess": "static-netlify", "source": "careerfoundry PM portfolio guide" }
+  ]
+}
