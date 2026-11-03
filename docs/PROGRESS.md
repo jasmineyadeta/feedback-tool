@@ -22,7 +22,7 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [x] ✅ D3 rule applied (Screenshot mode auto-chosen for failing platform fingerprints if below threshold)
 
 ## M2 — PDF review end to end (typed comments)
-- [ ] Owner magic-link auth (local inbox) + dev-only sign-in shortcut, with test proving it's absent in production
+- [x] Owner magic-link auth (local inbox) + dev-only sign-in shortcut, with test proving it's absent in production
 - [ ] Create PDF review, invites, reviewer link, pdf.js viewer (zoom, pages, text layer)
 - [ ] Tap/select to anchor, typed comments, autosave + IndexedDB restore, submit w/ name/email
 - [ ] Owner feedback view with navigate-to-anchor, revoke, delete

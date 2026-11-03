@@ -23,3 +23,18 @@ for (const p of pages) {
     });
   });
 }
+
+test('screenshot owner review page', async ({ page }, info) => {
+  const { signInNewOwner, createPdfReview, createInvite } = await import('./helpers/owner');
+  await signInNewOwner(page);
+  await createPdfReview(page, {
+    title: 'Resume fall 2026',
+    context: "I'm applying for APM roles at fintech companies.",
+  });
+  await page.getByRole('heading', { name: 'Resume fall 2026' }).waitFor();
+  await createInvite(page, 'Priya');
+  await page.screenshot({
+    path: `test-results/shots/review-${info.project.name}.png`,
+    fullPage: true,
+  });
+});
