@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+docs/
+**/.next
+**/dist
+supabase/migrations
+apps/proxy/fixtures
+CLAUDE.md
+KICKOFF_PROMPT.md
+.claude/

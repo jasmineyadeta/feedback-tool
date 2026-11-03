@@ -1,0 +1,21 @@
+{
+  "name": "@ft/overlay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dist": "./dist/overlay.js"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "esbuild src/main.ts --bundle --format=iife --target=es2020,safari15 --minify --outfile=dist/overlay.js"
+  },
+  "dependencies": {
+    "@ft/shared": "workspace:*",
+    "@ft/anchoring": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

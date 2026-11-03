@@ -1,0 +1,46 @@
+{
+  "name": "feedback-tool",
+  "private": true,
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "type": "module",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "dev": "bash scripts/dev.sh",
+    "dev:stop": "bash scripts/dev-stop.sh",
+    "dev:phone": "bash scripts/dev-phone.sh",
+    "verify": "bash scripts/verify.sh",
+    "merge-task": "bash scripts/merge-task.sh",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "test": "vitest run --project packages --project overlay-dom --project web --project proxy",
+    "test:db": "vitest run --project db",
+    "test:e2e": "playwright test --project=chromium --project=webkit-iphone",
+    "build": "pnpm -r build",
+    "gate": "tsx scripts/gate.ts",
+    "eval:anchors": "tsx scripts/eval-anchors.ts",
+    "test:live-ai": "MOCK_AI=0 vitest run --project live-ai",
+    "jobs:run": "pnpm --filter @ft/web jobs:run"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.64.1",
+    "@types/node": "22.20.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "fast-check": "4.10.2",
+    "jsdom": "30.1.3",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
+    "qrcode-terminal": "0.12.0",
+    "@supabase/supabase-js": "2.118.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.1.0"
+  }
+}

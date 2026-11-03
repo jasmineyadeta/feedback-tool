@@ -1,0 +1,6 @@
+title = "feedback-tool gitleaks config"
+[extend]
+useDefault = true
+[allowlist]
+description = "Local-only Supabase demo keys are public and identical on every machine"
+paths = ['''\.env\.example''', '''supabase/config\.toml''']

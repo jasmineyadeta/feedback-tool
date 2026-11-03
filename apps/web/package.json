@@ -1,0 +1,31 @@
+{
+  "name": "@ft/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "jobs:run": "tsx lib/server/jobs/run.ts"
+  },
+  "dependencies": {
+    "@ft/anchoring": "workspace:*",
+    "@ft/shared": "workspace:*",
+    "@radix-ui/react-dialog": "1.3.1",
+    "@supabase/ssr": "0.12.7",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.118.0",
+    "@tailwindcss/postcss": "4.3.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.4"
+  }
+}
