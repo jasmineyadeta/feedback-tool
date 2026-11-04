@@ -72,6 +72,11 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 
 ## Milestone summaries
 
+### M5 — done (2026-11-04)
+**Works:** link-only owner email on submit (plain + HTML, self-reported name flattened/escaped, "your site"/"your PDF"); invite statuses per D20 verified end to end (opening a link isn't tracked); mark addressed + general note (from M2); `pnpm smoke:mail` proves the local Mailer reaches the local inbox. Accessibility: axe gate (zero serious/critical) over 20 page states in both browsers; focusable scroll regions; keyboard-only commenting on PDFs, live sites (Enter on focused site controls, overlay 0.3.0) and screenshots; Escape cancels; screen-reader hints; site-wide not-found and error pages; slow-site message after 15 s.
+**Doesn't yet:** keyboard can only pick focusable elements on live sites; no route loading skeleton (it broke 404 status codes).
+**Manual checks pending for Jas:** none new. Still open: M2, M3, M4 real-device checks.
+
 ### M4 — done except the real-iPhone site check (2026-11-04)
 **Works:** owner creates **Website** reviews; the server validates the URL, health-checks through the proxy and headless Chromium (local `ScreenshotService`, playwright-core) and picks **Live** or **Screenshot mode**, explained in plain words. Reviewers comment on the live site in the proxy iframe (DOM anchors, multi-page: SPA and full loads, path bar, jump to other pages); talk-through works across pages (links navigate while recording, Pause hands the site back, eids namespaced per page load, AI + tap anchors). Owner sees the live site with markers; re-anchoring falls back textQuote → cssPath → rect (with a "changed" note) → the screenshot taken at submit with the marker. Screenshot mode: labelled picture for reviewer and owner, typed + talk-through comments. Anchors validated per review type; proxy host and query strings never stored.
 **Doesn't yet:** owner can't drag anchors (`owner_moved`); Screenshot mode is entry page only; tap numbers in the site restart per page.
