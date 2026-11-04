@@ -203,6 +203,14 @@ export function ReviewerApp(p: Props) {
   );
   const busyRecording = recording || tt.phase === 'uploading';
 
+  // Escape cancels "tap the spot" mode.
+  useEffect(() => {
+    if (!picking) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPicking(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [picking]);
+
   function dismissCoach() {
     setCoach(false);
     try {
@@ -340,6 +348,10 @@ export function ReviewerApp(p: Props) {
       {picking && !recording && (
         <p className="shrink-0 bg-accent px-3 py-2 text-center text-sm text-white" role="status">
           Tap the spot your comment is about.
+          <span className="sr-only">
+            {' '}
+            With a keyboard, press Tab to reach it, then Enter. Press Escape to cancel.
+          </span>
         </p>
       )}
       <div className="flex min-h-0 flex-1">
@@ -549,6 +561,7 @@ export function ReviewerApp(p: Props) {
           className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl md:inset-x-auto md:right-6 md:bottom-6 md:w-96 md:rounded-lg md:border"
           role="dialog"
           aria-label="Comment"
+          onKeyDown={(e) => e.key === 'Escape' && setComposer(null)}
         >
           <p className="text-xs text-muted">
             {anchorLabel(composer.anchor)}

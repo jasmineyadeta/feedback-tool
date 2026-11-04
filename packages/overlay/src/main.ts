@@ -166,8 +166,27 @@ for (const t of ['touchstart', 'touchend'])
 function onTap(e: MouseEvent) {
   const raw = document.elementFromPoint(e.clientX, e.clientY) ?? (e.target as Element);
   if (!raw || raw === document.documentElement || raw === document.body) return;
-  const el = meaningfulTarget(raw);
-  const anchor = buildDomAnchor(el, page(), e.clientX, e.clientY);
+  anchorElement(meaningfulTarget(raw), e.clientX, e.clientY);
+}
+
+// Keyboard (M5): in pick/record mode, Enter on the focused element points at it instead of activating it.
+window.addEventListener(
+  'keydown',
+  (e) => {
+    if (mode === 'browse' || e.key !== 'Enter') return;
+    const el = document.activeElement;
+    if (!el || el === document.body || el.closest('#__ft_root')) return;
+    if (mode === 'record' && isSiteLink(el)) return; // links still navigate while recording
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const r = el.getBoundingClientRect();
+    anchorElement(meaningfulTarget(el), r.left + r.width / 2, r.top + r.height / 2);
+  },
+  { capture: true },
+);
+
+function anchorElement(el: Element, x: number, y: number) {
+  const anchor = buildDomAnchor(el, page(), x, y);
   if (mode === 'pick') {
     flash(el, '•');
     post({ ft: 1, type: 'anchor:picked', anchor });

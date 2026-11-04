@@ -99,10 +99,21 @@ export function PdfViewer(props: Props) {
         ref={scroller}
         className="min-h-0 flex-1 overflow-auto bg-neutral-200/70 px-3 py-4"
         data-testid="pdf-scroller"
+        tabIndex={0}
+        role="region"
+        aria-label="Document"
         onScroll={onScroll}
       >
-        {error && <p className="mx-auto max-w-md rounded-md bg-white p-4 text-sm">{error}</p>}
-        {!doc && !error && <p className="p-4 text-center text-sm text-muted">Loading PDF…</p>}
+        {error && (
+          <p role="alert" className="mx-auto max-w-md rounded-md bg-white p-4 text-sm">
+            {error}
+          </p>
+        )}
+        {!doc && !error && (
+          <p role="status" className="p-4 text-center text-sm text-muted">
+            Loading PDF…
+          </p>
+        )}
         {doc &&
           base &&
           Array.from({ length: Math.min(pageCount, doc.numPages) }, (_, i) => (
@@ -128,7 +139,7 @@ export function PdfViewer(props: Props) {
         </button>
         <button
           className="pointer-events-auto min-w-12 rounded-full px-1 py-1"
-          aria-label="Fit to width"
+          aria-label={`${Math.round(zoom * 100)}%, fit to width`}
           onClick={() => setZoom(1)}
         >
           {Math.round(zoom * 100)}%
@@ -235,11 +246,26 @@ function PdfPage(
   const h = vp?.height ?? placeholder.h * scale;
 
   function tap(e: React.MouseEvent<HTMLDivElement>) {
-    if (!picking || !vp || !box.current) return;
+    if (!picking || !box.current) return;
     if ((e.target as HTMLElement).closest('[data-marker]')) return;
     const r = box.current.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
+    pickAt(e.clientX - r.left, e.clientY - r.top);
+  }
+
+  /** Keyboard: Enter/Space on a focused page pins the middle of its visible part. */
+  function key(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (!picking || !box.current || (e.key !== 'Enter' && e.key !== ' ')) return;
+    if (e.target !== e.currentTarget) return;
+    e.preventDefault();
+    const r = box.current.getBoundingClientRect();
+    const top = Math.max(r.top, 0);
+    const bottom = Math.min(r.bottom, window.innerHeight);
+    pickAt(r.width / 2, Math.max(0, (top + bottom) / 2 - r.top));
+  }
+
+  function pickAt(x: number, y: number) {
+    if (!vp || !box.current) return;
+    const r = box.current.getBoundingClientRect();
     const [px, py] = vp.convertToPdfPoint(x, y) as [number, number];
     onPick({
       kind: 'pdf',
@@ -274,6 +300,9 @@ function PdfPage(
         } as React.CSSProperties
       }
       onClick={tap}
+      onKeyDown={key}
+      tabIndex={picking ? 0 : undefined}
+      aria-description={picking ? 'Press Enter to comment on this page' : undefined}
       onMouseUp={selectionEnd}
       onTouchEnd={selectionEnd}
       aria-label={`Page ${n}`}

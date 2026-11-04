@@ -86,6 +86,9 @@ export function ScreenshotViewer(p: {
         ref={scroller}
         className="min-h-0 flex-1 overflow-auto bg-paper p-3"
         data-testid="screenshot-scroller"
+        tabIndex={0}
+        role="region"
+        aria-label="Screenshot of the site"
       >
         {screen && (
           <div className="relative mx-auto w-fit">
@@ -94,6 +97,18 @@ export function ScreenshotViewer(p: {
               src={screen.url}
               alt={`Screenshot of ${p.pagePath === '/' ? 'the home page' : p.pagePath}`}
               className={`block max-w-full shadow ring-1 ring-line ${p.picking ? 'cursor-crosshair' : ''}`}
+              tabIndex={p.picking ? 0 : undefined}
+              aria-description={
+                p.picking ? 'Press Enter to comment on the part in view' : undefined
+              }
+              onKeyDown={(e) => {
+                if (!p.picking || !p.onPick || e.key !== 'Enter') return;
+                e.preventDefault();
+                const r = e.currentTarget.getBoundingClientRect();
+                const top = Math.max(r.top, 0);
+                const bottom = Math.min(r.bottom, window.innerHeight);
+                p.onPick(anchorAt(0.5, ((top + bottom) / 2 - r.top) / r.height));
+              }}
               onClick={(e) => {
                 if (!p.picking || !p.onPick) return;
                 const r = e.currentTarget.getBoundingClientRect();

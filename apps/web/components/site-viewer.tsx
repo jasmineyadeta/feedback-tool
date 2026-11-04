@@ -32,6 +32,13 @@ export function SiteViewer(p: {
   const frame = useRef<HTMLIFrameElement>(null);
   const [path, setPath] = useState<string | null>(null);
   const [external, setExternal] = useState<string | null>(null);
+  const [slow, setSlow] = useState(false);
+  // No overlay after 15 s: the site (or review mode) isn't loading. Say so instead of a blank frame.
+  useEffect(() => {
+    if (path !== null) return setSlow(false);
+    const t = setTimeout(() => setSlow(true), 15_000);
+    return () => clearTimeout(t);
+  }, [path]);
   const latest = useRef(p);
   latest.current = p;
   const pendingFocus = useRef<SiteFocus | null>(null);
@@ -145,6 +152,11 @@ export function SiteViewer(p: {
           </span>
         )}
       </div>
+      {slow && (
+        <p role="alert" className="shrink-0 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          The site is taking a long time to load. Check your connection, then reload this page.
+        </p>
+      )}
       <iframe
         ref={frame}
         src={p.enterUrl}
