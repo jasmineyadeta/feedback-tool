@@ -39,7 +39,7 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [ ] Tap split, AI resolver + validator, split preview with "Looks good", edit/re-anchor/merge/delete
 - [ ] Owner audio playback, 90-day purge job
 - [x] Transcriber/LLM down or slow → audio kept, `pending`, friendly message, retry with backoff
-- [ ] `pnpm eval:anchors` (≥15 cases, ≥80% to adopt model) → `docs/ANCHOR_EVAL.md`
+- [x] `pnpm eval:anchors` (≥15 cases, ≥80% to adopt model) → `docs/ANCHOR_EVAL.md`
 - [x] ✅ Validator rejects reworded/missing/duplicated spans (property tests)
 - [x] ✅ Tap overrides AI
 - [x] ✅ Permission denied → typed path offered

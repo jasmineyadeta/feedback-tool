@@ -21,7 +21,7 @@
     "test:e2e": "playwright test --project=chromium --project=webkit-iphone",
     "build": "pnpm -r build",
     "gate": "tsx scripts/gate.ts",
-    "eval:anchors": "tsx scripts/eval-anchors.ts",
+    "eval:anchors": "tsx --conditions=react-server scripts/eval-anchors.ts",
     "test:live-ai": "MOCK_AI=0 vitest run --project live-ai",
     "jobs:run": "pnpm --filter @ft/web jobs:run"
   },
