@@ -20,7 +20,7 @@ write_env_files "$APP_ORIGIN" "$PROXY_ORIGIN"
 
 # Whisper server
 if port_in_use 8178; then c_ok "Whisper server already on :8178"; else
-  start_bg whisper whisper-server -m "$MODELS_DIR/ggml-$WHISPER_MODEL.bin" --host 127.0.0.1 --port 8178 -t 6
+  start_bg whisper whisper-server -m "$MODELS_DIR/ggml-$WHISPER_MODEL.bin" --host 127.0.0.1 --port 8178 -t 6 --convert
   c_ok "Whisper server starting on :8178 (model $WHISPER_MODEL)"
 fi
 

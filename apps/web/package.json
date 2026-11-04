@@ -8,7 +8,7 @@
     "build": "node scripts/copy-pdf-worker.mjs && next build",
     "start": "next start --port 3000",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "jobs:run": "tsx lib/server/jobs/run.ts"
+    "jobs:run": "tsx --conditions=react-server --env-file-if-exists=.env.local lib/server/jobs/run.ts"
   },
   "dependencies": {
     "@ft/anchoring": "workspace:*",

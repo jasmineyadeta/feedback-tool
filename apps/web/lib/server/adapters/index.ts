@@ -1,7 +1,7 @@
 import 'server-only';
 import type { AnchorResolver, Mailer, ProxyHost, ScreenshotService, Transcriber } from '@ft/shared';
 import { aiImpl, env } from '../env';
-import { mockTranscriber } from './transcriber';
+import { localTranscriber, mockTranscriber } from './transcriber';
 import { mockAnchorResolver } from './anchor-resolver';
 import { mockScreenshotService } from './screenshot';
 import { localMailer, mockMailer } from './mailer';
@@ -13,7 +13,7 @@ const notYet = (what: string): never => {
 };
 
 export function transcriber(): Transcriber {
-  return aiImpl('TRANSCRIBER') === 'mock' ? mockTranscriber() : notYet('Transcriber');
+  return aiImpl('TRANSCRIBER') === 'mock' ? mockTranscriber() : localTranscriber(env().WHISPER_URL);
 }
 export function anchorResolver(): AnchorResolver {
   return aiImpl('ANCHOR_RESOLVER') === 'mock' ? mockAnchorResolver() : notYet('AnchorResolver');

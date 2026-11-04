@@ -43,8 +43,9 @@ export async function reviewerPdfUrl(ctx: ReviewerCtx) {
 export async function listInviteComments(inviteId: string): Promise<ReviewerComment[]> {
   const { data, error } = await adminClient()
     .from('comments')
-    .select('client_id,text,anchor,general,sort_key,updated_at')
+    .select('client_id,text,anchor,anchor_source,general,sort_key,updated_at')
     .eq('invite_id', inviteId)
+    .eq('state', 'saved')
     .order('sort_key');
   if (error) throw error;
   return (data ?? []).map((r) => ({
@@ -52,6 +53,7 @@ export async function listInviteComments(inviteId: string): Promise<ReviewerComm
     text: r.text as string,
     anchor: (r.anchor as CommentDraft['anchor']) ?? null,
     general: r.general as boolean,
+    source: (r.anchor_source as CommentDraft['source']) ?? undefined,
     sortKey: r.sort_key as number,
     updatedAt: r.updated_at as string,
   }));
@@ -114,7 +116,7 @@ export async function applySync(ctx: ReviewerCtx, ops: SyncOp[]): Promise<{ acke
       client_id: c.clientId,
       text: c.text,
       anchor: c.general ? null : c.anchor,
-      anchor_source: c.anchor && !c.general ? 'manual' : null,
+      anchor_source: c.anchor && !c.general ? (c.source ?? 'manual') : null,
       pdf_page: c.anchor && !c.general ? c.anchor.page : null,
       general: c.general,
       sort_key: c.sortKey,
@@ -143,9 +145,21 @@ export async function submitInvite(ctx: ReviewerCtx, input: { name: string; emai
   const { count } = await admin
     .from('comments')
     .select('id', { count: 'exact', head: true })
-    .eq('invite_id', ctx.invite.id);
+    .eq('invite_id', ctx.invite.id)
+    .eq('state', 'saved');
   if (!count)
     throw new UserError(400, 'Add at least one comment or a general note first.', 'empty');
+  const { count: drafts } = await admin
+    .from('comments')
+    .select('id', { count: 'exact', head: true })
+    .eq('invite_id', ctx.invite.id)
+    .eq('state', 'draft');
+  if (drafts)
+    throw new UserError(
+      409,
+      'Check the comments from your recording first, then tap “Looks good”.',
+      'drafts',
+    );
   const now = new Date().toISOString();
   const { data, error } = await admin
     .from('reviewer_invites')

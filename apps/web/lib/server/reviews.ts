@@ -281,6 +281,7 @@ export async function listFeedback(reviewId: string) {
       .from('comments')
       .select('id,invite_id,text,anchor,general,addressed_at,created_at,sort_key')
       .eq('review_id', reviewId)
+      .eq('state', 'saved')
       .order('sort_key'),
     sb
       .from('reviewer_invites')

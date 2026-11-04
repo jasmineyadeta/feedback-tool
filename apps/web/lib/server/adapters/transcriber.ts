@@ -38,3 +38,56 @@ export function evenlySpaced(text: string, startSec = 0.2, perWord = 0.4): Trans
     })),
   };
 }
+
+/**
+ * Local whisper.cpp server (D14, M3 spike: docs/spikes/M3-whisper-word-timestamps.md).
+ * Server must run with `--convert` (ffmpeg); default settings, no VAD (VAD shifts timestamps).
+ */
+export function localTranscriber(url: string, timeoutMs = 60_000): Transcriber {
+  return {
+    name: 'whisper.cpp',
+    async transcribe(audio, mimeType) {
+      const form = new FormData();
+      const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.split('/')[1]!.split(';')[0]!;
+      form.set(
+        'file',
+        new Blob([audio as Uint8Array<ArrayBuffer>], { type: mimeType }),
+        `audio.${ext}`,
+      );
+      form.set('response_format', 'verbose_json');
+      form.set('temperature', '0');
+      const res = await fetch(`${url}/inference`, {
+        method: 'POST',
+        body: form,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) throw new Error(`whisper ${res.status}`);
+      return fromWhisper((await res.json()) as WhisperVerbose);
+    },
+  };
+}
+
+type WhisperVerbose = {
+  segments?: { words?: { word: string; start: number; end: number }[] }[];
+};
+
+/** Whisper emits punctuation as separate tokens; attach them to the previous word. */
+export function fromWhisper(r: WhisperVerbose): TranscriptResult {
+  const words: TranscriptResult['words'] = [];
+  for (const seg of r.segments ?? [])
+    for (const t of seg.words ?? []) {
+      const w = t.word.trim();
+      if (!w || /^\[.*\]$/.test(w)) continue; // skip empties and [BLANK_AUDIO]-style markers
+      const prev = words[words.length - 1];
+      if (prev && /^[^\p{L}\p{N}]+$/u.test(w)) {
+        prev.w = (prev.w + w).slice(0, 100);
+        continue;
+      }
+      words.push({
+        w: w.slice(0, 100),
+        start: Math.max(0, t.start),
+        end: Math.max(t.start, t.end),
+      });
+    }
+  return { text: words.map((w) => w.w).join(' '), words };
+}

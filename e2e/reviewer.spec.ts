@@ -134,7 +134,8 @@ test('revoked and unknown links show the same not-found page with a 404', async 
   const ok = await page.goto(s.link);
   expect(ok?.status()).toBe(200);
   await s.owner.getByRole('button', { name: 'Revoke' }).click();
-  await expect(s.owner.getByText('Revoked')).toBeVisible();
+  // exact: the row's buttons read "RevokeDelete", which a loose match would accept too early.
+  await expect(s.owner.getByText('Revoked', { exact: true })).toBeVisible();
 
   const revoked = await page.goto(s.link);
   expect(revoked?.status()).toBe(404);

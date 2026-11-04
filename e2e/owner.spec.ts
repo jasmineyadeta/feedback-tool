@@ -57,9 +57,9 @@ test('owner creates a PDF review, invites a reviewer, and revokes', async ({ pag
   expect(link).toMatch(/\/r\/[A-Za-z0-9_-]{43}$/);
   await expect(page.getByText('Not started')).toBeVisible();
   await page.getByRole('button', { name: 'Revoke' }).click();
-  await expect(page.getByText('Revoked')).toBeVisible();
+  await expect(page.getByText('Revoked', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText('Revoked')).toBeVisible();
+  await expect(page.getByText('Revoked', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Reviewer link')).toHaveCount(0); // link shown once only
 });
 

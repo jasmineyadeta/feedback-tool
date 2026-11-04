@@ -32,7 +32,9 @@ type Props = {
 };
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error';
-type Composer = { clientId: string | null; anchor: PdfAnchor; text: string };
+type AnyPdfAnchor = NonNullable<CommentDraft['anchor']>;
+type Composer = { clientId: string | null; anchor: AnyPdfAnchor; text: string };
+const quoteOf = (a: AnyPdfAnchor | null | undefined) => (a?.kind === 'pdf' ? a.textQuote : null);
 
 const SAVE_LABEL: Record<SaveStatus, string> = {
   idle: '',
@@ -159,7 +161,9 @@ export function ReviewerApp(p: Props) {
   const list = useMemo(() => sorted(state).filter((c) => !c.general), [state]);
   const general = state.comments[GENERAL_NOTE_ID]?.text ?? '';
   const markers: PdfMarker[] = list.flatMap((c, i) =>
-    c.anchor ? [{ id: c.clientId, n: i + 1, anchor: c.anchor, active: c.clientId === active }] : [],
+    c.anchor?.kind === 'pdf'
+      ? [{ id: c.clientId, n: i + 1, anchor: c.anchor, active: c.clientId === active }]
+      : [],
   );
   const pending = Object.keys(state.queue).length;
 
@@ -305,9 +309,9 @@ export function ReviewerApp(p: Props) {
                     {i + 1} · Page {c.anchor?.page}
                     {state.queue[c.clientId] ? ' · not synced yet' : ''}
                   </span>
-                  {c.anchor?.textQuote && (
+                  {quoteOf(c.anchor) && (
                     <span className="mt-1 block truncate border-l-2 border-amber-300 pl-2 text-xs text-muted">
-                      {c.anchor.textQuote.exact}
+                      {quoteOf(c.anchor)!.exact}
                     </span>
                   )}
                   <span className="mt-1 block whitespace-pre-wrap">{c.text}</span>
@@ -397,9 +401,7 @@ export function ReviewerApp(p: Props) {
         >
           <p className="text-xs text-muted">
             Page {composer.anchor.page}
-            {composer.anchor.textQuote
-              ? ` · “${composer.anchor.textQuote.exact.slice(0, 60)}”`
-              : ''}
+            {quoteOf(composer.anchor) ? ` · “${quoteOf(composer.anchor)!.exact.slice(0, 60)}”` : ''}
           </p>
           <label htmlFor="composer" className="sr-only">
             Your comment
