@@ -25,8 +25,8 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [x] Owner magic-link auth (local inbox) + dev-only sign-in shortcut, with test proving it's absent in production
 - [x] Create PDF review, invites, reviewer link, pdf.js viewer (zoom, pages, text layer)
 - [x] Tap/select to anchor, typed comments, autosave + IndexedDB restore, submit w/ name/email
-- [ ] Owner feedback view with navigate-to-anchor, revoke, delete
-- [ ] ✅ E2E full happy path on chromium + webkit-iphone
+- [x] Owner feedback view with navigate-to-anchor, revoke, delete
+- [x] ✅ E2E full happy path on chromium + webkit-iphone
 - [x] ✅ Refresh mid-draft restores comments
 - [x] ✅ Offline save queues and syncs
 - [x] ✅ Revoked link 404s
@@ -71,6 +71,11 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 ---
 
 ## Milestone summaries
+
+### M2 — done (2026-11-03)
+**Works:** owner magic-link sign-in (local inbox) + dev shortcut proven absent in production; PDF upload validated server-side (type, 15 MB, 30 pages); one-time reviewer links with revoke/delete; reviewer page with pdf.js viewer (lazy pages, zoom, text layer), tap-to-pin and select-to-quote anchors, typed comments, IndexedDB-first autosave with versioned ACK queue (survives refresh and offline), general note, submit with name/email (owner emailed, no content in email), read-only after submit; owner feedback view with markers, jump-to-anchor, reviewer filter, mark addressed. Unknown/revoked/deleted links share one 404 page. E2E: 7 reviewer/owner tests × chromium + webkit-iphone.
+**Doesn't yet:** recording/transcription and AI anchors (M3); website reviews (M4).
+**Manual checks pending for Jas:** "M2 — PDF reviewer on a real iPhone" in `docs/MANUAL_CHECKS.md` (needs `pnpm dev:phone`).
 
 ### M1 — done (2026-11-03)
 **Works:** document proxy (wrangler dev) with HMAC tokens, SSRF guard, path-preserving `__enter` flow, HTML rewriting, header stripping, rate limits; overlay (39 KB) with SPA history patch, SW/form blocking, record/pick modes, taps, timeline snapshots, anchor show/locate; anchoring with SPEC §4.3 fallback order; 6 fixtures × 9 e2e tests in both browsers; live gate 80% (12/15), D3 pass → live by default.

@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { LIMITS } from '@ft/shared';
+import { LIMITS, type PdfAnchor } from '@ft/shared';
 import { adminClient, userClient, viaApp } from './supabase';
 import { validatePdf } from './pdf';
 import { env } from './env';
@@ -258,4 +258,62 @@ export async function deleteInvite(invite: InviteRow) {
 
 export function isUuid(s: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+// ---------------------------------------------------------------- feedback (owner, RLS: submitted only)
+export type FeedbackComment = {
+  id: string;
+  invite_id: string;
+  text: string;
+  anchor: PdfAnchor | null;
+  general: boolean;
+  addressed_at: string | null;
+  created_at: string;
+  sort_key: number;
+};
+export type FeedbackReviewer = { id: string; name: string; submitted_at: string };
+
+/** RLS returns only comments whose invite is submitted (D20); owners can't see drafts. */
+export async function listFeedback(reviewId: string) {
+  const sb = await userClient();
+  const [{ data: comments, error }, { data: invites, error: e2 }] = await Promise.all([
+    sb
+      .from('comments')
+      .select('id,invite_id,text,anchor,general,addressed_at,created_at,sort_key')
+      .eq('review_id', reviewId)
+      .order('sort_key'),
+    sb
+      .from('reviewer_invites')
+      .select('id,reviewer_name,name_hint,submitted_at')
+      .eq('review_id', reviewId)
+      .eq('status', 'submitted')
+      .order('submitted_at'),
+  ]);
+  if (error) throw error;
+  if (e2) throw e2;
+  const reviewers: FeedbackReviewer[] = (invites ?? []).map((i) => ({
+    id: i.id as string,
+    name: (i.reviewer_name as string | null) || (i.name_hint as string) || 'Reviewer',
+    submitted_at: i.submitted_at as string,
+  }));
+  return { comments: (comments ?? []) as FeedbackComment[], reviewers };
+}
+
+export async function setAddressed(commentId: string, addressed: boolean) {
+  if (!isUuid(commentId)) return null;
+  const sb = await userClient();
+  const { data, error } = await sb
+    .from('comments')
+    .update({ addressed_at: addressed ? new Date().toISOString() : null })
+    .eq('id', commentId)
+    .select('id,review_id,invite_id,addressed_at');
+  if (error) throw error;
+  return (
+    (data?.[0] as {
+      id: string;
+      review_id: string;
+      invite_id: string;
+      addressed_at: string | null;
+    }) ?? null
+  );
 }

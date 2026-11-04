@@ -214,3 +214,74 @@ test('another owner cannot open or delete my review; deleting it removes the sto
   await other.context().close();
   await s.owner.context().close();
 });
+
+test('full loop: owner sees only submitted feedback, jumps to an anchor, marks it addressed', async ({
+  browser,
+  page,
+}, info) => {
+  const s = await setup(browser, 'Priya');
+  await openAsReviewer(page, s.link);
+  let saved = synced(page);
+  await addComment(page, 'Strong opening line.');
+  await saved;
+
+  // Drafts are invisible to the owner until the reviewer submits (D20).
+  await s.owner.goto(`/reviews/${s.reviewId}/feedback`);
+  await expect(s.owner.getByText('No feedback yet.')).toBeVisible();
+
+  // Second comment on page 2, so navigate-to-anchor has to scroll.
+  await page.locator('[data-page="2"]').scrollIntoViewIfNeeded();
+  await expect(page.locator('[data-page="2"] .textLayer span').first()).toBeAttached();
+  saved = synced(page);
+  await page.getByRole('button', { name: 'Add comment' }).click();
+  await page.getByRole('region', { name: 'Page 2' }).click({ position: { x: 120, y: 200 } });
+  await page.getByLabel('Your comment', { exact: true }).fill('Page two needs a heading.');
+  await page.getByRole('button', { name: 'Save comment' }).click();
+  await saved;
+  await page.getByRole('button', { name: 'Submit' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Send your feedback' });
+  await sheet.getByLabel('Your email').fill('priya@example.com');
+  await sheet.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByText(/Thanks — your feedback was sent/)).toBeVisible();
+
+  const o = await (await browser.newContext({ ...info.project.use })).newPage();
+  const { data: link } = await admin().auth.admin.generateLink({
+    type: 'magiclink',
+    email: (await admin().auth.admin.getUserById(s.ownerId)).data.user!.email!,
+  });
+  await o.goto(`/auth/confirm?token_hash=${link.properties!.hashed_token}&next=/reviews`);
+  await o.waitForURL('**/reviews');
+  await o.goto(`/reviews/${s.reviewId}`);
+  await o.getByRole('link', { name: /Open feedback \(1\)/ }).click();
+  await o.waitForURL(/\/feedback$/);
+  await expect(o.locator('[data-page="1"] .textLayer span').first()).toBeAttached();
+
+  if (await o.getByRole('button', { name: /^Comments \(/ }).isVisible())
+    await o.getByRole('button', { name: /^Comments \(/ }).click();
+  const second = o.getByTestId('feedback-comment').filter({ hasText: 'Page two needs a heading.' });
+  await expect(second).toContainText('Priya (self-reported)');
+  await second.getByRole('button').first().click();
+  const marker = o.getByRole('button', { name: 'Comment 2' });
+  await expect(marker).toHaveClass(/animate-pulse/);
+  await expect(marker).toBeInViewport();
+  await expect(o.getByText('Page 2 of 2')).toBeVisible();
+  await o.screenshot({ path: `test-results/shots/owner-feedback-${info.project.name}.png` });
+
+  if (await o.getByRole('button', { name: /^Comments \(/ }).isVisible())
+    await o.getByRole('button', { name: /^Comments \(/ }).click();
+  const patched = o.waitForResponse((r) => r.url().includes('/comments/') && r.status() === 200);
+  await second.getByLabel('Mark addressed').check();
+  await expect(second.getByLabel('Mark addressed')).toBeChecked();
+  await patched;
+  await o.reload();
+  if (await o.getByRole('button', { name: /^Comments \(/ }).isVisible())
+    await o.getByRole('button', { name: /^Comments \(/ }).click();
+  await expect(
+    o
+      .getByTestId('feedback-comment')
+      .filter({ hasText: 'Page two needs a heading.' })
+      .getByLabel('Mark addressed'),
+  ).toBeChecked();
+  await o.context().close();
+  await s.owner.context().close();
+});

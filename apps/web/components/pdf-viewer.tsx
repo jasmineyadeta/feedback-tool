@@ -69,13 +69,19 @@ export function PdfViewer(props: Props) {
     return () => ro.disconnect();
   }, []);
 
-  const onVisible = useCallback(
-    (n: number) => {
-      setPage(n);
-      onPageChange?.(n);
-    },
-    [onPageChange],
-  );
+  // Current page = the page under the middle of the scroller.
+  const onScroll = useCallback(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const mid = el.getBoundingClientRect().top + el.clientHeight / 2;
+    let cur = 1;
+    for (const pg of el.querySelectorAll<HTMLElement>('[data-page]'))
+      if (pg.getBoundingClientRect().top <= mid) cur = Number(pg.dataset.page);
+    setPage((prev) => {
+      if (prev !== cur) onPageChange?.(cur);
+      return cur;
+    });
+  }, [onPageChange]);
 
   const fit = base && width ? Math.min((width - 24) / base.w, 2) : 1;
   const scale = fit * zoom;
@@ -87,6 +93,7 @@ export function PdfViewer(props: Props) {
         ref={scroller}
         className="min-h-0 flex-1 overflow-auto bg-neutral-200/70 px-3 py-4"
         data-testid="pdf-scroller"
+        onScroll={onScroll}
       >
         {error && <p className="mx-auto max-w-md rounded-md bg-white p-4 text-sm">{error}</p>}
         {!doc && !error && <p className="p-4 text-center text-sm text-muted">Loading PDF…</p>}
@@ -100,12 +107,11 @@ export function PdfViewer(props: Props) {
               scale={scale}
               placeholder={base}
               {...props}
-              onVisible={onVisible}
               root={scroller}
             />
           ))}
       </div>
-      <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-ink/85 px-2 py-1 text-xs text-white shadow">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-ink/85 px-2 py-1 text-xs text-white shadow">
         <button
           className="pointer-events-auto rounded-full px-2 py-1 disabled:opacity-40"
           aria-label="Zoom out"
@@ -143,11 +149,10 @@ function PdfPage(
     n: number;
     scale: number;
     placeholder: { w: number; h: number };
-    onVisible: (n: number) => void;
     root: React.RefObject<HTMLDivElement | null>;
   },
 ) {
-  const { doc, n, scale, placeholder, onVisible, root, picking, onPick, onSelection, onMarker } = p;
+  const { doc, n, scale, placeholder, root, picking, onPick, onSelection, onMarker } = p;
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const textBox = useRef<HTMLDivElement>(null);
@@ -155,7 +160,7 @@ function PdfPage(
   const [pg, setPg] = useState<PDFPageProxy | null>(null);
   const [vp, setVp] = useState<PageViewport | null>(null);
 
-  // Lazy: only render pages near the viewport; report the page that's mostly on screen.
+  // Lazy: only render pages near the viewport.
   useEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -163,17 +168,11 @@ function PdfPage(
       root: root.current,
       rootMargin: '800px 0px',
     });
-    const vis = new IntersectionObserver(([e]) => e?.isIntersecting && onVisible(n), {
-      root: root.current,
-      threshold: 0.5,
-    });
     near.observe(el);
-    vis.observe(el);
     return () => {
       near.disconnect();
-      vis.disconnect();
     };
-  }, [n, onVisible, root]);
+  }, [n, root]);
 
   useEffect(() => {
     if (!near || pg) return;
