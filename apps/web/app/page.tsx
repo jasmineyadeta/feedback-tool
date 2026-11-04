@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SiteLinks } from '@/components/legal-page';
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
           Sign in to start
         </Link>
       </div>
+      <SiteLinks />
     </main>
   );
 }

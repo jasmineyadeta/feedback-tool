@@ -714,7 +714,10 @@ function SubmitSheet(p: {
                 className="mt-1 w-full rounded-md border border-line p-2 text-base"
               />
               <span className="mt-1 block text-xs text-muted">
-                Shared with the person who asked for feedback, so they can thank you.
+                Shared with the person who asked for feedback, so they can thank you.{' '}
+                <a href="/privacy" target="_blank" rel="noopener" className="underline">
+                  Privacy
+                </a>
               </span>
             </label>
             {error && (

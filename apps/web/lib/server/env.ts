@@ -22,6 +22,8 @@ const Env = z.object({
   OLLAMA_URL: z.string().url().default('http://127.0.0.1:11434'),
   ANCHOR_MODEL: z.string().default('qwen3:14b'),
   MAIL_OUTBOX_DIR: z.string().optional(),
+  /** Shown on /contact for takedown requests. Unset = the page says no address is set up yet. */
+  CONTACT_EMAIL: z.preprocess((v) => v || undefined, z.string().email().optional()),
 });
 export type ServerEnv = z.infer<typeof Env>;
 

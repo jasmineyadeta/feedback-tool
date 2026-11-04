@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentUser } from '@/lib/server/supabase';
 import { devShortcutEnabled } from '@/lib/server/auth';
 import { SignInForm } from '@/components/sign-in-form';
+import { SiteLinks } from '@/components/legal-page';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,7 @@ export default async function SignIn({
           </button>
         </form>
       )}
+      <SiteLinks className="mt-8" />
     </main>
   );
 }

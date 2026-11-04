@@ -422,6 +422,12 @@ export function ConsentSheet({ tt }: { tt: TalkThrough }) {
               <li>It’s never used to train AI.</li>
             </ul>
           </Dialog.Description>
+          <p className="mt-3 text-xs text-muted">
+            <a href="/privacy" target="_blank" rel="noopener" className="underline">
+              Read the privacy notice
+            </a>{' '}
+            (opens in a new tab)
+          </p>
           <div className="mt-5 flex justify-end gap-2">
             <Dialog.Close className={btn.secondary}>Not now</Dialog.Close>
             <button className={btn.primary} onClick={() => void tt.agree()}>
