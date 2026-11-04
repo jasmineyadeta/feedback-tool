@@ -1,15 +1,17 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import type { PdfAnchor, PdfPageAnchor } from '@ft/shared';
+import type { Anchor } from '@ft/shared';
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
+import { SiteViewer, type LocateMethod, type SiteFocus, type SiteMarker } from './site-viewer';
 import { btn } from './ui';
+import { anchorLabel, quoteOf, type ReviewerArtifact } from '@/lib/artifact';
 
 type Comment = {
   id: string;
   invite_id: string;
   text: string;
-  anchor: PdfAnchor | PdfPageAnchor | null;
+  anchor: Anchor | null;
   anchor_source: string | null;
   general: boolean;
   addressed_at: string | null;
@@ -18,6 +20,8 @@ type Comment = {
   span_start_ms: number | null;
   span_end_ms: number | null;
   transcript_original: string | null;
+  /** Signed URL of the page screenshot taken at submit (websites), if any. */
+  screenshot_url: string | null;
 };
 
 const SOURCE: Record<string, string> = {
@@ -33,8 +37,7 @@ type Reviewer = { id: string; name: string; submitted_at: string };
 /** SPEC §3.3: artifact left, comments right (desktop); artifact + bottom sheet (mobile). */
 export function FeedbackView(p: {
   reviewId: string;
-  pdfUrl: string;
-  pageCount: number;
+  artifact: ReviewerArtifact;
   comments: Comment[];
   reviewers: Reviewer[];
 }) {
@@ -43,6 +46,9 @@ export function FeedbackView(p: {
   const [active, setActive] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focus, setFocus] = useState<SiteFocus | null>(null);
+  const [located, setLocated] = useState<{ id: string; method: LocateMethod | null } | null>(null);
+  const art = p.artifact;
   const names = useMemo(() => new Map(p.reviewers.map((r) => [r.id, r.name])), [p.reviewers]);
 
   const visible = comments.filter((c) => filter === 'all' || c.invite_id === filter);
@@ -53,6 +59,10 @@ export function FeedbackView(p: {
     c.anchor?.kind === 'pdf'
       ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor, active: c.id === active }]
       : [],
+  );
+
+  const siteMarkers: SiteMarker[] = pinned.flatMap((c) =>
+    c.anchor?.kind === 'dom' ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor }] : [],
   );
 
   // One shared player: plays exactly the comment's span of the reviewer's recording.
@@ -109,6 +119,16 @@ export function FeedbackView(p: {
     // Markers exist on every page (even before it renders), so this always lands on the anchor.
     // Page-level ("On screen") comments scroll to the top of their page.
     const c = comments.find((x) => x.id === id);
+    if (art.kind === 'site') {
+      if (!c?.anchor) return;
+      setLocated({ id, method: null });
+      setFocus((f) => ({
+        anchor: c.anchor!,
+        label: String(number.get(id) ?? ''),
+        seq: (f?.seq ?? 0) + 1,
+      }));
+      return;
+    }
     requestAnimationFrame(() =>
       (c?.anchor?.kind === 'pdf-page'
         ? document.querySelector(`[data-page="${c.anchor.page}"]`)
@@ -156,7 +176,7 @@ export function FeedbackView(p: {
           <span>
             {names.get(c.invite_id) ?? 'Reviewer'}{' '}
             <span title="Reviewers type their own name">(self-reported)</span>
-            {c.anchor ? ` · Page ${c.anchor.page}` : ' · General note'}
+            {c.anchor ? ` · ${anchorLabel(c.anchor)}` : ' · General note'}
           </span>
           {c.anchor_source && SOURCE[c.anchor_source] && (
             <span className="rounded-full bg-paper px-2 py-0.5 font-medium text-ink ring-1 ring-line">
@@ -164,9 +184,9 @@ export function FeedbackView(p: {
             </span>
           )}
         </span>
-        {c.anchor?.kind === 'pdf' && c.anchor.textQuote && (
+        {quoteOf(c.anchor) && (
           <span className="mt-1 block truncate border-l-2 border-amber-300 pl-2 text-xs text-muted">
-            {c.anchor.textQuote.exact}
+            {quoteOf(c.anchor)}
           </span>
         )}
         <span
@@ -247,26 +267,48 @@ export function FeedbackView(p: {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1">
-          <PdfViewer
-            url={p.pdfUrl}
-            pageCount={p.pageCount}
-            markers={markers}
-            picking={false}
-            onPick={() => undefined}
-            onMarker={(id) => {
-              setActive(id);
-              setSheetOpen(true);
-              requestAnimationFrame(() =>
-                document
-                  .querySelector(`[data-comment-anchor="${id}"]`)
-                  ?.scrollIntoView({ block: 'nearest' }),
-              );
-            }}
-          />
+        <div className="relative min-w-0 flex-1">
+          {art.kind === 'site' ? (
+            <>
+              <SiteViewer
+                enterUrl={art.enterUrl}
+                proxyOrigin={art.proxyOrigin}
+                markers={siteMarkers}
+                mode="browse"
+                focus={focus}
+                onPick={() => undefined}
+                onLocated={(method) => setLocated((l) => l && { ...l, method })}
+              />
+              {located && (
+                <LocateNote
+                  comment={comments.find((c) => c.id === located.id) ?? null}
+                  n={number.get(located.id) ?? 0}
+                  method={located.method}
+                  onClose={() => setLocated(null)}
+                />
+              )}
+            </>
+          ) : (
+            <PdfViewer
+              url={art.url}
+              pageCount={art.pageCount}
+              markers={markers}
+              picking={false}
+              onPick={() => undefined}
+              onMarker={(id) => {
+                setActive(id);
+                setSheetOpen(true);
+                requestAnimationFrame(() =>
+                  document
+                    .querySelector(`[data-comment-anchor="${id}"]`)
+                    ?.scrollIntoView({ block: 'nearest' }),
+                );
+              }}
+            />
+          )}
         </div>
         <aside
-          className={`${sheetOpen ? 'fixed inset-x-0 bottom-0 z-30 max-h-[70dvh] rounded-t-xl shadow-2xl' : 'hidden'} flex-col overflow-auto border-l border-line bg-white md:static md:flex md:max-h-none md:w-96 md:rounded-none md:shadow-none`}
+          className={`${sheetOpen ? 'fixed inset-x-0 bottom-0 z-30 max-h-[70dvh] rounded-t-xl shadow-2xl' : 'hidden'} flex-col overflow-auto border-l border-line bg-white md:static md:flex md:max-h-none md:w-80 md:rounded-none md:shadow-none`}
           aria-label="Feedback comments"
         >
           {panel}
@@ -277,6 +319,95 @@ export function FeedbackView(p: {
           Comments ({pinned.length + general.length})
         </button>
       </nav>
+    </div>
+  );
+}
+
+/**
+ * SPEC §3.3 / §4.3: how the comment was found on today's page. If it can't be found, show the
+ * screenshot taken when the reviewer submitted, with the marker, and say the page has changed.
+ */
+function LocateNote(p: {
+  comment: Comment | null;
+  n: number;
+  method: LocateMethod | null;
+  onClose: () => void;
+}) {
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  if (!p.method) return null;
+  if (p.method === 'textQuote' || p.method === 'cssPath')
+    return (
+      <p className="sr-only" role="status" data-testid="locate-status" data-method={p.method}>
+        Shown on the page.
+      </p>
+    );
+  if (p.method === 'rect')
+    return (
+      <p
+        className="absolute inset-x-3 top-10 z-10 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 shadow ring-1 ring-amber-300"
+        role="status"
+        data-testid="locate-status"
+        data-method="rect"
+      >
+        This part of the page has changed since the review. The marker shows where it was.
+      </p>
+    );
+  const a = p.comment?.anchor;
+  const pt =
+    a?.kind === 'dom'
+      ? { x: a.rectDoc.x + a.point.xPct * a.rectDoc.w, y: a.rectDoc.y + a.point.yPct * a.rectDoc.h }
+      : a?.kind === 'viewport'
+        ? { x: 16, y: a.scroll.y + 24 }
+        : null;
+  const vw = a && 'viewport' in a ? a.viewport.w : 1;
+  return (
+    <div
+      className="absolute inset-0 z-10 flex flex-col bg-paper"
+      role="dialog"
+      aria-label="Screenshot from the review"
+      data-testid="locate-status"
+      data-method="none"
+    >
+      <div className="flex shrink-0 items-center gap-3 border-b border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="flex-1">
+          This part of the page has changed since the review.
+          {p.comment?.screenshot_url ? ' Here’s the page as the reviewer saw it.' : ''}
+        </p>
+        <button className="font-medium underline" onClick={p.onClose}>
+          Back to the live page
+        </button>
+      </div>
+      {p.comment?.screenshot_url ? (
+        <div className="min-h-0 flex-1 overflow-auto p-3">
+          <div className="relative mx-auto w-fit">
+            <span className="absolute left-2 top-2 rounded bg-ink/80 px-2 py-0.5 text-xs font-medium text-white">
+              Screenshot
+            </span>
+            <img
+              src={p.comment.screenshot_url}
+              alt="The page when the review was submitted"
+              className="block max-w-full shadow ring-1 ring-line"
+              onLoad={(e) =>
+                setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })
+              }
+            />
+            {pt && size && (
+              <span
+                className="absolute flex h-6 min-w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold text-white shadow"
+                style={{
+                  left: `${(pt.x / vw) * 100}%`,
+                  top: `${(pt.y / size.h) * 100}%`,
+                }}
+                data-testid="screenshot-marker"
+              >
+                {p.n}
+              </span>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="p-4 text-sm text-muted">No screenshot was saved for this comment.</p>
+      )}
     </div>
   );
 }

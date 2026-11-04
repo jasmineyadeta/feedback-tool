@@ -10,6 +10,7 @@ type DistOmit<T> = T extends unknown ? Omit<T, 'ft'> : never;
 export type SiteMarker = { id: string; n: number; anchor: Anchor };
 export type SiteFocus = { anchor: Anchor; label: string; seq: number };
 export type SiteMode = 'browse' | 'pick' | 'record';
+export type LocateMethod = 'textQuote' | 'cssPath' | 'rect' | 'none';
 
 /**
  * Live website in the proxy iframe (SPEC §3.2, §6). All talk with the overlay goes through
@@ -26,7 +27,7 @@ export function SiteViewer(p: {
   onTap?: (tap: TimelineTap) => void;
   onSnapshot?: (s: TimelineSnapshot) => void;
   onPath?: (path: string) => void;
-  onLocated?: (found: boolean) => void;
+  onLocated?: (method: LocateMethod) => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [path, setPath] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export function SiteViewer(p: {
           });
           break;
         case 'anchor:located':
-          cur.onLocated?.(m.found);
+          cur.onLocated?.(m.found ? m.method : 'none');
           break;
         case 'external-link':
           setExternal(m.host);

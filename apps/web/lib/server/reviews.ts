@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { LIMITS, type PdfAnchor, type PdfPageAnchor } from '@ft/shared';
+import { LIMITS, type Anchor } from '@ft/shared';
 import { adminClient, userClient, viaApp } from './supabase';
 import { validatePdf } from './pdf';
 import { env } from './env';
@@ -349,8 +349,10 @@ export type FeedbackComment = {
   id: string;
   invite_id: string;
   text: string;
-  anchor: PdfAnchor | PdfPageAnchor | null;
+  anchor: Anchor | null;
   anchor_source: 'tap' | 'ai' | 'viewport' | 'manual' | 'owner_moved' | null;
+  page_path: string | null;
+  screenshot_file_key: string | null;
   general: boolean;
   addressed_at: string | null;
   created_at: string;
@@ -369,7 +371,7 @@ export async function listFeedback(reviewId: string) {
     sb
       .from('comments')
       .select(
-        'id,invite_id,text,anchor,anchor_source,general,addressed_at,created_at,sort_key,recording_id,span_start_ms,span_end_ms,transcript_original',
+        'id,invite_id,text,anchor,anchor_source,general,addressed_at,created_at,sort_key,recording_id,span_start_ms,span_end_ms,transcript_original,page_path,screenshot_file_key',
       )
       .eq('review_id', reviewId)
       .eq('state', 'saved')

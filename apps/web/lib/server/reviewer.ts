@@ -47,7 +47,11 @@ export type ReviewerArtifact =
   | { kind: 'site'; enterUrl: string; proxyOrigin: string; startPath: string };
 
 export async function reviewerArtifact(ctx: ReviewerCtx): Promise<ReviewerArtifact | null> {
-  const r = ctx.review;
+  return artifactFor(ctx.review);
+}
+
+/** The artifact as reviewers and the owner see it. */
+export async function artifactFor(r: ReviewRow): Promise<ReviewerArtifact | null> {
   if (r.artifact_type === 'pdf') {
     const url = await signedPdfUrl(r);
     return url ? { kind: 'pdf', url, pageCount: r.pdf_page_count ?? 1 } : null;

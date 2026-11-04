@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plans</title><link rel="stylesheet" href="/style.css"></head>
+<body><main id="m"></main>
+<script>
+  // Re-anchoring fixture (SPEC §4.3). The page "changes after the review" via localStorage, which is
+  // per browser context, so parallel tests never see each other's version.
+  // 0 = as reviewed; 1 = small text edits + image re-wrapped; 2 = content replaced, same layout.
+  var v = 0;
+  try { v = Number(localStorage.getItem('ft-mutation')) || 0; } catch (e) {}
+  var img = '<img src="/chart.svg" alt="Pricing chart" width="200" height="120">';
+  var versions = [
+    '<h1>Plans</h1>' + img + '<p>Starter costs ten dollars a month for one seat.</p><p>Team costs forty dollars a month.</p>',
+    '<h1>Plans</h1><figure><img src="/chart.svg" alt="Price comparison" width="200" height="120"></figure><p>Starter costs ten dollars a month for each seat.</p><p>Team costs forty dollars a month.</p>',
+    '<h1>Plans</h1><div style="width:200px;height:120px;background:#eee"></div><p>Contact our sales team for current prices.</p><p>Discounts for nonprofits.</p>'
+  ];
+  document.getElementById('m').innerHTML = versions[v] || versions[0];
+</script></body></html>

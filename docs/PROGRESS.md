@@ -48,10 +48,10 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [ ] *Manual:* record on real iPhone Safari and iPad
 
 ## M4 — Website review (live + Screenshot mode)
-- [ ] Proxy wired into reviewer/owner UIs, multi-page nav, capture-mode click suppression
+- [x] Proxy wired into reviewer/owner UIs, multi-page nav, capture-mode click suppression
 - [ ] Website timeline capture, anchors + re-anchoring, screenshot capture on submit, Screenshot mode UI with labels
 - [x] ✅ Fixture e2e: talk-through on SPA fixture across 2 pages → correctly anchored comments (mocked AI)
-- [ ] ✅ Re-anchor after fixture DOM mutation falls back in the specified order
+- [x] ✅ Re-anchor after fixture DOM mutation falls back in the specified order
 - [ ] ✅ Screenshot-mode site labelled to reviewer and owner
 - [ ] *Manual:* 3 live Framer/Webflow sites on real iPhone
 
