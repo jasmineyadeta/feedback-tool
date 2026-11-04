@@ -49,10 +49,10 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 
 ## M4 — Website review (live + Screenshot mode)
 - [x] Proxy wired into reviewer/owner UIs, multi-page nav, capture-mode click suppression
-- [ ] Website timeline capture, anchors + re-anchoring, screenshot capture on submit, Screenshot mode UI with labels
+- [x] Website timeline capture, anchors + re-anchoring, screenshot capture on submit, Screenshot mode UI with labels
 - [x] ✅ Fixture e2e: talk-through on SPA fixture across 2 pages → correctly anchored comments (mocked AI)
 - [x] ✅ Re-anchor after fixture DOM mutation falls back in the specified order
-- [ ] ✅ Screenshot-mode site labelled to reviewer and owner
+- [x] ✅ Screenshot-mode site labelled to reviewer and owner
 - [ ] *Manual:* 3 live Framer/Webflow sites on real iPhone
 
 ## M5 — Notifications, status, polish
@@ -71,6 +71,11 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 ---
 
 ## Milestone summaries
+
+### M4 — done except the real-iPhone site check (2026-11-04)
+**Works:** owner creates **Website** reviews; the server validates the URL, health-checks through the proxy and headless Chromium (local `ScreenshotService`, playwright-core) and picks **Live** or **Screenshot mode**, explained in plain words. Reviewers comment on the live site in the proxy iframe (DOM anchors, multi-page: SPA and full loads, path bar, jump to other pages); talk-through works across pages (links navigate while recording, Pause hands the site back, eids namespaced per page load, AI + tap anchors). Owner sees the live site with markers; re-anchoring falls back textQuote → cssPath → rect (with a "changed" note) → the screenshot taken at submit with the marker. Screenshot mode: labelled picture for reviewer and owner, typed + talk-through comments. Anchors validated per review type; proxy host and query strings never stored.
+**Doesn't yet:** owner can't drag anchors (`owner_moved`); Screenshot mode is entry page only; tap numbers in the site restart per page.
+**Manual checks pending for Jas:** "M4 — Live websites on a real iPhone" (3 real Framer/Webflow sites) in `docs/MANUAL_CHECKS.md`. Still open: M2 and M3 real-device checks.
 
 ### M3 — done except the real-device check (2026-11-03)
 **Works:** spike chose whisper.cpp (≤0.54 s early, no VAD); Record with disclosure + consent; recording bar (pause/stop/cancel, 10-min cap); taps while talking; PDF timeline (visible lines every second); audio kept in IndexedDB (as bytes, Safari-safe) + memory until the server ACKs; upload with magic-byte checks; local transcription with retry/backoff and a "taking longer" message; tap split → AI placement (qwen3:14b via Ollama, prompt v2, 87% on `pnpm eval:anchors`, 4/6 held-out) → mandatory validator (property-tested) → viewport fallback; split preview with edit / re-anchor / merge (server-side) / delete / Looks good; owner badges, original transcript, clip playback; 90-day audio purge job. 10 talk-through e2e × 2 browsers.

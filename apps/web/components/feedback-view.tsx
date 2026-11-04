@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { Anchor } from '@ft/shared';
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
 import { SiteViewer, type LocateMethod, type SiteFocus, type SiteMarker } from './site-viewer';
+import { ScreenshotViewer, type ShotMarker } from './screenshot-viewer';
 import { btn } from './ui';
 import { anchorLabel, quoteOf, type ReviewerArtifact } from '@/lib/artifact';
 
@@ -63,6 +64,12 @@ export function FeedbackView(p: {
 
   const siteMarkers: SiteMarker[] = pinned.flatMap((c) =>
     c.anchor?.kind === 'dom' ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor }] : [],
+  );
+
+  const shotMarkers: ShotMarker[] = pinned.flatMap((c) =>
+    c.anchor?.kind === 'screenshot'
+      ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor, active: c.id === active }]
+      : [],
   );
 
   // One shared player: plays exactly the comment's span of the reviewer's recording.
@@ -268,7 +275,19 @@ export function FeedbackView(p: {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">
-          {art.kind === 'site' ? (
+          {art.kind === 'screenshot' ? (
+            <ScreenshotViewer
+              audience="owner"
+              screens={art.screens}
+              pagePath={art.pagePath}
+              markers={shotMarkers}
+              picking={false}
+              onMarker={(id) => {
+                setActive(id);
+                setSheetOpen(true);
+              }}
+            />
+          ) : art.kind === 'site' ? (
             <>
               <SiteViewer
                 enterUrl={art.enterUrl}

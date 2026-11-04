@@ -20,3 +20,18 @@ Things automation can't cover (real devices, real mic). Each has steps and what 
 - [ ] Repeat on the **iPad**.
 - [ ] Deny the mic once (Settings → Safari → Microphone → Deny), tap Record.
   - Good: "Your microphone is blocked…" with **Type a comment**.
+
+## M4 — Live websites on a real iPhone
+Use three real portfolio sites you know: at least one **Framer** and one **Webflow** (e.g. from `docs/test-portfolios.json`).
+- [ ] With `pnpm dev:phone` running, create a **Website** review for each site on the laptop.
+  - Good: the review page says **Live site** or **Screenshot mode** with a plain reason, within ~20 s.
+- [ ] Open each reviewer link on the **iPhone (Safari)**. Scroll, open another page through the site's own navigation.
+  - Good: the site looks like the real one; the grey bar shows the current page (e.g. "/about"); nothing says "blocked" or stays blank.
+- [ ] **Add comment** → tap a heading → type → save. Go to another page and do it again.
+  - Good: a numbered outline on what you tapped; the comment list shows both pages.
+- [ ] **Record**, talk about something on screen, follow a link to another page, tap something there, talk again, **Stop**.
+  - Good: links still navigate while recording; the preview shows two comments with the right pages ("Home page", "/work"…).
+- [ ] Submit, then open the feedback on the laptop and click each comment.
+  - Good: it jumps to the right page and outlines the right element. If a site has changed since, you see the screenshot from the review with the marker.
+- [ ] For any site that came out in **Screenshot mode**: open its reviewer link.
+  - Good: the yellow **Screenshot** label says it's a picture, not the live site; tapping it adds a comment.

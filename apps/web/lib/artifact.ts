@@ -3,7 +3,12 @@ import type { Anchor } from '@ft/shared';
 /** What the reviewer's viewer loads (built server-side in lib/server/reviewer.ts). */
 export type ReviewerArtifact =
   | { kind: 'pdf'; url: string; pageCount: number }
-  | { kind: 'site'; enterUrl: string; proxyOrigin: string; startPath: string };
+  | { kind: 'site'; enterUrl: string; proxyOrigin: string; startPath: string }
+  | {
+      kind: 'screenshot';
+      pagePath: string;
+      screens: { name: string; width: number; url: string }[];
+    };
 
 /** Short "where" label for a comment's anchor, shown in comment lists. */
 export function anchorLabel(a: Anchor | null | undefined): string {

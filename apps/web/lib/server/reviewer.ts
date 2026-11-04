@@ -1,11 +1,13 @@
 import 'server-only';
 import { LIMITS, type CommentDraft, type SyncOp } from '@ft/shared';
-import { adminClient } from './supabase';
+import { adminClient, viaApp } from './supabase';
 import { hashToken, signedPdfUrl, UserError, type InviteRow, type ReviewRow } from './reviews';
 import { logEvent } from './events';
 import { mailer } from './adapters';
 import { env } from './env';
 import { proxyEnterUrl } from './proxy';
+import type { ReviewerArtifact } from '../artifact';
+import type { HealthReport } from '../site-mode';
 
 /**
  * Reviewer side. Reviewers have no account: the invite token in the URL is the credential.
@@ -41,11 +43,6 @@ export async function reviewerPdfUrl(ctx: ReviewerCtx) {
   return signedPdfUrl(ctx.review);
 }
 
-/** What the reviewer's viewer loads. Live sites get a fresh proxy entry URL (token TTL 6 h). */
-export type ReviewerArtifact =
-  | { kind: 'pdf'; url: string; pageCount: number }
-  | { kind: 'site'; enterUrl: string; proxyOrigin: string; startPath: string };
-
 export async function reviewerArtifact(ctx: ReviewerCtx): Promise<ReviewerArtifact | null> {
   return artifactFor(ctx.review);
 }
@@ -56,7 +53,24 @@ export async function artifactFor(r: ReviewRow): Promise<ReviewerArtifact | null
     const url = await signedPdfUrl(r);
     return url ? { kind: 'pdf', url, pageCount: r.pdf_page_count ?? 1 } : null;
   }
-  if (r.render_mode !== 'live' || !r.site_url || !r.site_etld1) return null; // Screenshot mode: next slice
+  if (!r.site_url || !r.site_etld1) return null;
+  if (r.render_mode === 'screenshot') {
+    // Labelled screenshots of the entry page (one per width); never the live site.
+    const shots = (r.health_report as HealthReport | null)?.screens ?? [];
+    const { data } = await adminClient()
+      .storage.from('screenshots')
+      .createSignedUrls(
+        shots.map((s) => s.key),
+        6 * 3600,
+      );
+    const screens = shots.flatMap((s, i) =>
+      data?.[i]?.signedUrl
+        ? [{ name: `entry-${s.width}`, width: s.width, url: viaApp(data[i]!.signedUrl) }]
+        : [],
+    );
+    const pagePath = new URL(r.site_url).pathname || '/';
+    return screens.length ? { kind: 'screenshot', pagePath, screens } : null;
+  }
   const site = new URL(r.site_url);
   const startPath = `${site.pathname}${site.search}`;
   const enter = await proxyEnterUrl({
@@ -283,7 +297,8 @@ export function anchorFits(
 ): boolean {
   if (review.artifact_type === 'pdf')
     return (a.kind === 'pdf' || a.kind === 'pdf-page') && a.page <= (review.pdf_page_count ?? 30);
-  if (review.render_mode === 'screenshot') return a.kind === 'screenshot';
+  if (review.render_mode === 'screenshot')
+    return a.kind === 'screenshot' && /^entry-\d{3,4}$/.test(a.imageKey);
   return a.kind === 'dom' || a.kind === 'viewport';
 }
 

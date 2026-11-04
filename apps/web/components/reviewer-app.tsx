@@ -5,6 +5,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { GENERAL_NOTE_ID, LIMITS, type CommentDraft, type PdfAnchor } from '@ft/shared';
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
 import { SiteViewer, type SiteFocus, type SiteMarker } from './site-viewer';
+import { ScreenshotViewer, type ShotMarker } from './screenshot-viewer';
 import { anchorLabel, quoteOf, type ReviewerArtifact } from '@/lib/artifact';
 import { btn } from './ui';
 import {
@@ -179,6 +180,11 @@ export function ReviewerApp(p: Props) {
   const siteMarkers: SiteMarker[] = list.flatMap((c, i) =>
     c.anchor?.kind === 'dom' ? [{ id: c.clientId, n: i + 1, anchor: c.anchor }] : [],
   );
+  const shotMarkers: ShotMarker[] = list.flatMap((c, i) =>
+    c.anchor?.kind === 'screenshot'
+      ? [{ id: c.clientId, n: i + 1, anchor: c.anchor, active: c.clientId === active }]
+      : [],
+  );
   const pending = Object.keys(state.queue).length;
   const tt = useTalkThrough({
     token: p.token,
@@ -186,7 +192,7 @@ export function ReviewerApp(p: Props) {
     openRecordings: readOnly ? [] : p.openRecordings,
     knownClientIds: () =>
       new Set([...Object.keys(ref.current.comments), ...Object.keys(ref.current.queue)]),
-    external: art.kind === 'site',
+    external: art.kind !== 'pdf',
   });
   const recording = tt.phase === 'recording';
   const reanchoring = !!tt.reanchor && !tt.reanchor.anchor;
@@ -338,7 +344,36 @@ export function ReviewerApp(p: Props) {
       )}
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1">
-          {art.kind === 'site' ? (
+          {art.kind === 'screenshot' ? (
+            <ScreenshotViewer
+              audience="reviewer"
+              screens={art.screens}
+              pagePath={art.pagePath}
+              markers={[
+                ...shotMarkers,
+                ...(recording
+                  ? tt.taps.flatMap((t, i) =>
+                      t.fullAnchor.kind === 'screenshot'
+                        ? [{ id: `tap-${i}`, n: i + 1, anchor: t.fullAnchor, active: true }]
+                        : [],
+                    )
+                  : []),
+              ]}
+              picking={picking || recording || reanchoring}
+              recording={recording && !tt.paused}
+              onSnapshot={tt.pushSnapshot}
+              onPick={(anchor) => {
+                if (recording) return tt.tap(anchor);
+                if (reanchoring) return tt.setReanchor({ clientId: tt.reanchor!.clientId, anchor });
+                setPicking(false);
+                setComposer({ clientId: null, anchor, text: '' });
+              }}
+              onMarker={(id) => {
+                setActive(id);
+                setListOpen(true);
+              }}
+            />
+          ) : art.kind === 'site' ? (
             <SiteViewer
               enterUrl={art.enterUrl}
               proxyOrigin={art.proxyOrigin}
