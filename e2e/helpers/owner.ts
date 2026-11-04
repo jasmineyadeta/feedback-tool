@@ -34,12 +34,22 @@ export async function createPdfReview(
   opts: { title: string; file?: string; context?: string },
 ) {
   await page.goto('/reviews/new');
+  await page.locator('label', { hasText: /^PDF$/ }).click(); // the radio itself is visually hidden
   await page
     .getByLabel(/PDF \(up to/)
     .setInputFiles(opts.file ?? 'apps/web/test/fixtures/resume-2p.pdf');
   await page.getByLabel(/Title/).fill(opts.title);
   if (opts.context) await page.getByLabel(/Context for reviewers/).fill(opts.context);
   await page.getByRole('button', { name: 'Create review' }).click();
+}
+
+/** Website review on a local fixture site (ALLOW_FIXTURE_HOSTS in e2e). Waits for the review page. */
+export async function createSiteReview(page: Page, opts: { url: string; title?: string }) {
+  await page.goto('/reviews/new');
+  await page.getByLabel('Website address').fill(opts.url);
+  if (opts.title) await page.getByLabel(/Title/).fill(opts.title);
+  await page.getByRole('button', { name: 'Create review' }).click();
+  await page.waitForURL(/\/reviews\/[0-9a-f-]{36}$/, { timeout: 30_000 });
 }
 
 export async function createInvite(page: Page, name = ''): Promise<string> {

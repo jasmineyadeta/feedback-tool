@@ -5,6 +5,7 @@ import { getReview, listInvites } from '@/lib/server/reviews';
 import { Shell } from '@/components/ui';
 import { InvitePanel } from '@/components/invite-panel';
 import { DeleteReview } from '@/components/delete-review';
+import { explainMode, type HealthReport } from '@/lib/site-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,19 +14,38 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const review = await getReview((await params).id);
   if (!review) notFound();
   const invites = await listInvites(review.id);
+  const site = review.site_url ? new URL(review.site_url) : null;
+  const health = review.health_report as HealthReport | null;
   const submitted = invites.filter((i) => i.status === 'submitted').length;
   return (
     <Shell>
       <Link href="/reviews" className="text-sm text-muted hover:text-ink">
         ← All reviews
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold">{review.title || 'Untitled PDF'}</h1>
-      <p className="mt-1 text-sm text-muted">
-        PDF
-        {review.pdf_page_count
-          ? ` · ${review.pdf_page_count} page${review.pdf_page_count > 1 ? 's' : ''}`
-          : ''}
-      </p>
+      <h1 className="mt-2 text-2xl font-semibold">
+        {review.title || (site ? site.host : 'Untitled PDF')}
+      </h1>
+      {site ? (
+        <p className="mt-1 text-sm text-muted">
+          Website · <span className="break-all">{site.host + site.pathname}</span>
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-muted">
+          PDF
+          {review.pdf_page_count
+            ? ` · ${review.pdf_page_count} page${review.pdf_page_count > 1 ? 's' : ''}`
+            : ''}
+        </p>
+      )}
+      {site && health && (
+        <div
+          data-testid="site-mode"
+          className={`mt-4 max-w-2xl rounded-md p-4 text-sm ring-1 ${health.mode === 'live' ? 'bg-white ring-line' : 'bg-amber-50 ring-amber-300'}`}
+        >
+          <p className="font-medium">{explainMode(health).title}</p>
+          <p className="mt-1 text-muted">{explainMode(health).body}</p>
+        </div>
+      )}
       {review.context && (
         <p className="mt-4 max-w-2xl whitespace-pre-wrap rounded-md bg-white p-4 text-sm ring-1 ring-line">
           {review.context}

@@ -5,6 +5,16 @@ import { adminClient, userClient, viaApp } from './supabase';
 import { validatePdf } from './pdf';
 import { env } from './env';
 import { logEvent } from './events';
+import { proxyEnterUrl, validateSiteUrl } from './proxy';
+import { screenshotService } from './adapters';
+import {
+  decideMode,
+  headlessHealth,
+  proxyFailureMessage,
+  proxyHealth,
+  SCREEN_WIDTHS,
+} from './site-health';
+import type { HealthReport, SiteScreen } from '../site-mode';
 
 export type ReviewRow = {
   id: string;
@@ -67,7 +77,7 @@ export async function getReview(id: string): Promise<ReviewRow | null> {
   return (data as ReviewRow) ?? null;
 }
 
-export async function createPdfReview(ownerId: string, input: { title: string; context: string }) {
+async function assertRoomForReview() {
   const sb = await userClient();
   const { count } = await sb
     .from('reviews')
@@ -79,6 +89,11 @@ export async function createPdfReview(ownerId: string, input: { title: string; c
       `You can have up to ${LIMITS.reviewsPerOwner} reviews during the pilot. Delete one to make room.`,
       'limit',
     );
+}
+
+export async function createPdfReview(ownerId: string, input: { title: string; context: string }) {
+  await assertRoomForReview();
+  const sb = await userClient();
   const id = randomUUID();
   const key = `${ownerId}/${id}.pdf`;
   const { error } = await sb.from('reviews').insert({
@@ -93,6 +108,73 @@ export async function createPdfReview(ownerId: string, input: { title: string; c
   if (up.error) throw up.error;
   await logEvent(id, null, 'review_created', { artifact: 'pdf' });
   return { id, upload: { url: viaApp(up.data.signedUrl) } };
+}
+
+/**
+ * SPEC §3.1 website: validate the URL server-side, health-check through the proxy and headlessly,
+ * choose live or Screenshot mode, and (Screenshot mode) store entry-page screenshots.
+ */
+export async function createSiteReview(
+  ownerId: string,
+  input: { url: string; title: string; context: string },
+) {
+  await assertRoomForReview();
+  const chk = await validateSiteUrl(input.url);
+  if (!chk.ok) throw new UserError(400, chk.message, chk.reason);
+  const id = randomUUID();
+  const path = `${chk.url.pathname}${chk.url.search}`;
+  const enter = await proxyEnterUrl({ reviewId: id, siteUrl: chk.url, etld1: chk.etld1, path });
+  const proxy = await proxyHealth(enter.token, path);
+  if (!proxy.ok) throw new UserError(400, proxyFailureMessage(proxy), 'site_unreachable');
+  const headless = await headlessHealth(enter.url);
+  const { mode, reason } = decideMode(proxy, headless);
+  const screens: SiteScreen[] = [];
+  if (mode === 'screenshot') {
+    const store = adminClient().storage.from('screenshots');
+    try {
+      for (const s of SCREEN_WIDTHS) {
+        const png = await screenshotService().capture({ url: enter.url, ...s, fullPage: true });
+        const key = `${ownerId}/${id}/entry-${s.width}.png`;
+        const { error } = await store.upload(key, png, { contentType: 'image/png', upsert: true });
+        if (error) throw error;
+        screens.push({ width: s.width, key });
+      }
+    } catch {
+      await removeObjects(screens.map((s) => ({ bucket: 'screenshots', path: s.key })));
+      throw new UserError(
+        400,
+        'We couldn’t load your site, even as a screenshot. Check the address and try again.',
+        'screenshot_failed',
+      );
+    }
+  }
+  const report: HealthReport = {
+    checkedAt: new Date().toISOString(),
+    mode,
+    reason,
+    platform: proxy.platform ?? 'unknown',
+    proxy: { status: proxy.status ?? null, ms: proxy.ms ?? 0 },
+    headless,
+    screens,
+  };
+  const sb = await userClient();
+  const { error } = await sb.from('reviews').insert({
+    id,
+    owner_id: ownerId,
+    artifact_type: 'website',
+    site_url: `${chk.url.origin}${chk.url.pathname}${chk.url.search}`,
+    site_etld1: chk.etld1,
+    title: input.title,
+    context: input.context,
+    render_mode: mode,
+    health_report: report,
+  });
+  if (error) {
+    await removeObjects(screens.map((s) => ({ bucket: 'screenshots', path: s.key })));
+    throw error;
+  }
+  await logEvent(id, null, 'review_created', { artifact: 'website', mode, reason });
+  return { id, mode };
 }
 
 /** After the browser uploads to the signed URL: validate server-side, then attach to the review. */
@@ -149,6 +231,8 @@ export async function deleteReview(review: ReviewRow) {
     .not('screenshot_file_key', 'is', null);
   for (const s of shots ?? [])
     objects.push({ bucket: 'screenshots', path: s.screenshot_file_key as string });
+  for (const s of (review.health_report as HealthReport | null)?.screens ?? [])
+    objects.push({ bucket: 'screenshots', path: s.key });
   await removeObjects(objects);
   const { error } = await admin
     .from('reviews')

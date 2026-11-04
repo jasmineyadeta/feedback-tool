@@ -6,7 +6,7 @@ const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   transpilePackages: ['@ft/shared', '@ft/anchoring'],
-  serverExternalPackages: ['pdfjs-dist'],
+  serverExternalPackages: ['pdfjs-dist', 'playwright-core'],
   // D31: the phone never talks to Supabase directly; the app proxies /sb/* to local Supabase.
   async rewrites() {
     return [{ source: '/sb/:path*', destination: `${supabaseUrl}/:path*` }];

@@ -3,14 +3,11 @@ import type { AnchorResolver, Mailer, ProxyHost, ScreenshotService, Transcriber 
 import { aiImpl, env } from '../env';
 import { localTranscriber, mockTranscriber } from './transcriber';
 import { mockAnchorResolver, ollamaAnchorResolver } from './anchor-resolver';
-import { mockScreenshotService } from './screenshot';
+import { localScreenshotService, mockScreenshotService } from './screenshot';
 import { localMailer, mockMailer } from './mailer';
 import { localProxyHost } from './proxy-host';
 
-/** D30 registry: pick implementations by env. `local` adapters are added per milestone. */
-const notYet = (what: string): never => {
-  throw new Error(`${what}: local adapter not built yet`);
-};
+/** D30 registry: pick implementations by env. */
 
 export function transcriber(): Transcriber {
   return aiImpl('TRANSCRIBER') === 'mock' ? mockTranscriber() : localTranscriber(env().WHISPER_URL);
@@ -21,7 +18,7 @@ export function anchorResolver(): AnchorResolver {
     : ollamaAnchorResolver(env().OLLAMA_URL, env().ANCHOR_MODEL);
 }
 export function screenshotService(): ScreenshotService {
-  return env().SCREENSHOT === 'mock' ? mockScreenshotService() : notYet('ScreenshotService');
+  return env().SCREENSHOT === 'mock' ? mockScreenshotService() : localScreenshotService();
 }
 export function mailer(): Mailer {
   return env().MAILER === 'mock' ? mockMailer() : localMailer();
