@@ -34,7 +34,7 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [x] ✅ Deleting review removes storage objects
 
 ## M3 — Talk-through recording (PDF first)
-- [ ] Spike: whisper.cpp word-level timestamps on iPhone `audio/mp4` (switch to faster-whisper if unusable)
+- [x] Spike: whisper.cpp word-level timestamps on iPhone `audio/mp4` (switch to faster-whisper if unusable)
 - [ ] Recorder, disclosure + consent, bar UI, IndexedDB buffer, upload, local transcription
 - [ ] Tap split, AI resolver + validator, split preview with "Looks good", edit/re-anchor/merge/delete
 - [ ] Owner audio playback, 90-day purge job
