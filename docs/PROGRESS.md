@@ -23,15 +23,15 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 
 ## M2 — PDF review end to end (typed comments)
 - [x] Owner magic-link auth (local inbox) + dev-only sign-in shortcut, with test proving it's absent in production
-- [ ] Create PDF review, invites, reviewer link, pdf.js viewer (zoom, pages, text layer)
-- [ ] Tap/select to anchor, typed comments, autosave + IndexedDB restore, submit w/ name/email
+- [x] Create PDF review, invites, reviewer link, pdf.js viewer (zoom, pages, text layer)
+- [x] Tap/select to anchor, typed comments, autosave + IndexedDB restore, submit w/ name/email
 - [ ] Owner feedback view with navigate-to-anchor, revoke, delete
 - [ ] ✅ E2E full happy path on chromium + webkit-iphone
-- [ ] ✅ Refresh mid-draft restores comments
-- [ ] ✅ Offline save queues and syncs
-- [ ] ✅ Revoked link 404s
-- [ ] ✅ Cross-owner and cross-invite access denied
-- [ ] ✅ Deleting review removes storage objects
+- [x] ✅ Refresh mid-draft restores comments
+- [x] ✅ Offline save queues and syncs
+- [x] ✅ Revoked link 404s
+- [x] ✅ Cross-owner and cross-invite access denied
+- [x] ✅ Deleting review removes storage objects
 
 ## M3 — Talk-through recording (PDF first)
 - [ ] Spike: whisper.cpp word-level timestamps on iPhone `audio/mp4` (switch to faster-whisper if unusable)

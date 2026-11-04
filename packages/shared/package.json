@@ -9,7 +9,8 @@
     "./protocol": "./src/protocol.ts",
     "./timeline": "./src/timeline.ts",
     "./proxy-token": "./src/proxy-token.ts",
-    "./limits": "./src/limits.ts"
+    "./limits": "./src/limits.ts",
+    "./reviewer": "./src/reviewer.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

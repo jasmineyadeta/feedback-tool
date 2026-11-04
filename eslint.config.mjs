@@ -19,6 +19,7 @@ export default tseslint.config(
       '.run/**',
       '**/generated/**',
       'docs/**',
+      'apps/web/public/pdf.worker.min.mjs',
     ],
   },
   js.configs.recommended,

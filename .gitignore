@@ -22,3 +22,4 @@ supabase/.temp
 next-env.d.ts
 *.tsbuildinfo
 src/generated/
+apps/web/public/pdf.worker.min.mjs

@@ -1,6 +1,6 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { adminClient } from './supabase';
 
 const NO_STORE = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
@@ -17,7 +17,7 @@ export const notFound = () =>
 export const unauthorized = () =>
   fail(401, 'Your session has ended. Sign in again to continue.', 'unauthorized');
 
-export async function parseJson<S extends z.ZodType>(
+export async function parseJson<S extends z.core.$ZodType>(
   req: Request,
   schema: S,
 ): Promise<{ ok: true; data: z.output<S> } | { ok: false; res: NextResponse }> {
@@ -30,7 +30,7 @@ export async function parseJson<S extends z.ZodType>(
       res: fail(400, "We couldn't read that request. Reload the page and try again.", 'bad_json'),
     };
   }
-  const r = schema.safeParse(body);
+  const r = z.safeParse(schema, body);
   if (!r.success)
     return {
       ok: false,
