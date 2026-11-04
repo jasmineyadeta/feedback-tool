@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { LIMITS, type PdfAnchor } from '@ft/shared';
+import { LIMITS, type PdfAnchor, type PdfPageAnchor } from '@ft/shared';
 import { adminClient, userClient, viaApp } from './supabase';
 import { validatePdf } from './pdf';
 import { env } from './env';
@@ -265,11 +265,16 @@ export type FeedbackComment = {
   id: string;
   invite_id: string;
   text: string;
-  anchor: PdfAnchor | null;
+  anchor: PdfAnchor | PdfPageAnchor | null;
+  anchor_source: 'tap' | 'ai' | 'viewport' | 'manual' | 'owner_moved' | null;
   general: boolean;
   addressed_at: string | null;
   created_at: string;
   sort_key: number;
+  recording_id: string | null;
+  span_start_ms: number | null;
+  span_end_ms: number | null;
+  transcript_original: string | null;
 };
 export type FeedbackReviewer = { id: string; name: string; submitted_at: string };
 
@@ -279,7 +284,9 @@ export async function listFeedback(reviewId: string) {
   const [{ data: comments, error }, { data: invites, error: e2 }] = await Promise.all([
     sb
       .from('comments')
-      .select('id,invite_id,text,anchor,general,addressed_at,created_at,sort_key')
+      .select(
+        'id,invite_id,text,anchor,anchor_source,general,addressed_at,created_at,sort_key,recording_id,span_start_ms,span_end_ms,transcript_original',
+      )
       .eq('review_id', reviewId)
       .eq('state', 'saved')
       .order('sort_key'),
@@ -317,4 +324,24 @@ export async function setAddressed(commentId: string, addressed: boolean) {
       addressed_at: string | null;
     }) ?? null
   );
+}
+
+/** Owner audio: RLS only returns recordings of submitted invites on the owner's own reviews. */
+export async function ownerAudioUrl(reviewId: string, recordingId: string) {
+  if (!isUuid(recordingId)) return { status: 'not_found' as const };
+  const sb = await userClient();
+  const { data } = await sb
+    .from('recordings')
+    .select('audio_file_key,invite:reviewer_invites!inner(review_id)')
+    .eq('id', recordingId)
+    .maybeSingle();
+  const row = data as { audio_file_key: string | null; invite: { review_id: string } } | null;
+  if (!row || row.invite.review_id !== reviewId) return { status: 'not_found' as const };
+  if (!row.audio_file_key) return { status: 'purged' as const };
+  const { data: signed } = await adminClient()
+    .storage.from('audio')
+    .createSignedUrl(row.audio_file_key, 3600);
+  return signed
+    ? { status: 'ok' as const, url: viaApp(signed.signedUrl) }
+    : { status: 'not_found' as const };
 }

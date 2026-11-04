@@ -67,7 +67,7 @@ let promptCache: string | null = null;
 export function resolverPrompt(): string {
   if (promptCache) return promptCache;
   for (const p of ['lib/anchor-resolver/prompt.md', 'apps/web/lib/anchor-resolver/prompt.md']) {
-    const full = path.join(process.cwd(), p);
+    const full = path.join(/* turbopackIgnore: true */ process.cwd(), p);
     if (existsSync(full))
       return (promptCache = readFileSync(full, 'utf8').replace(/^<!--.*?-->\s*/s, ''));
   }

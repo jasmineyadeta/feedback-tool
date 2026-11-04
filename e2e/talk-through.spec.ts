@@ -241,3 +241,90 @@ test('offline at stop: recording stays on the device and uploads when back onlin
   expect(await stored()).toBe(0); // removed after the ACK
   await s.owner.context().close();
 });
+
+test('preview merge + re-anchor + edit; owner sees source, original transcript, and can play the clip', async ({
+  browser,
+  page,
+}, info) => {
+  await fakeMic(page);
+  const s = await setup(browser, page);
+  await startRecording(page);
+  await page.waitForTimeout(1200);
+  await page.getByRole('region', { name: 'Page 1' }).click({ position: { x: 120, y: 140 } });
+  await setScript(page, TWO_SENTENCES);
+  await page.getByRole('button', { name: 'Stop' }).click();
+  const preview = page.getByRole('dialog', { name: 'Here’s what we heard' });
+  const cards = preview.getByTestId('proposed-comment');
+  await expect(cards).toHaveCount(2, { timeout: 15000 });
+
+  // Merge: words joined in order, the tapped anchor wins.
+  await cards.nth(1).getByRole('button', { name: 'Merge with previous' }).click();
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText('Tapped');
+  await expect(cards.first().getByRole('textbox')).toHaveValue(
+    'Overall this resume reads really clearly This heading needs a stronger verb',
+  );
+
+  // Re-anchor: the sheet steps aside, the reviewer taps page 2, the sheet comes back.
+  await cards.first().getByRole('button', { name: 'Re-anchor' }).click();
+  await expect(page.getByText('Tap the spot this comment is about.')).toBeVisible();
+  await page.locator('[data-page="2"]').scrollIntoViewIfNeeded();
+  await page.getByRole('region', { name: 'Page 2' }).click({ position: { x: 100, y: 120 } });
+  await expect(cards.first()).toContainText('Page 2');
+  await cards
+    .first()
+    .getByRole('textbox')
+    .fill('Overall clear. The heading needs a stronger verb.');
+  await page.screenshot({ path: `test-results/shots/preview-edit-${info.project.name}.png` });
+
+  const saved = page.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
+  await preview.getByRole('button', { name: 'Looks good' }).click();
+  await saved;
+  await page.getByRole('button', { name: 'Submit' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Send your feedback' });
+  await sheet.getByLabel('Your email').fill('kai@example.com');
+  await sheet.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByText(/Thanks — your feedback was sent/)).toBeVisible();
+
+  const o = s.owner;
+  await o.setViewportSize(page.viewportSize()!);
+  await o.goto(`/reviews/${s.reviewId}/feedback`);
+  const openSheet = async () => {
+    if (await o.getByRole('button', { name: /^Comments \(/ }).isVisible())
+      await o.getByRole('button', { name: /^Comments \(/ }).click();
+  };
+  await openSheet();
+  const card = o.getByTestId('feedback-comment').first();
+  await expect(card).toContainText('Tapped');
+  await expect(card).toContainText('Page 2');
+  await expect(card).toContainText('Overall clear. The heading needs a stronger verb.');
+  await card.getByText('Original transcript').click();
+  await expect(card).toContainText(
+    'overall this resume reads really clearly this heading needs a stronger verb',
+  );
+
+  const audioRes = o.waitForResponse(
+    (r) => r.url().includes('/audio') && r.request().method() === 'GET',
+  );
+  await card.getByRole('button', { name: /Play/ }).click();
+  const res = await audioRes;
+  expect(res.status()).toBe(200);
+  const { url } = (await res.json()) as { url: string };
+  expect((await o.request.get(url)).status()).toBe(200); // the clip itself is reachable
+  await o.screenshot({ path: `test-results/shots/owner-audio-${info.project.name}.png` });
+
+  // After the 90-day purge the words stay; playing explains what happened.
+  const { data: inv } = await admin()
+    .from('reviewer_invites')
+    .select('id')
+    .eq('review_id', s.reviewId)
+    .single();
+  await admin().from('recordings').update({ audio_file_key: null }).eq('invite_id', inv!.id);
+  await o.reload();
+  await openSheet();
+  await o.getByTestId('feedback-comment').first().getByRole('button', { name: /Play/ }).click();
+  await expect(
+    o.getByText('This recording was deleted after 90 days. The words are kept.'),
+  ).toBeVisible();
+  await o.context().close();
+});

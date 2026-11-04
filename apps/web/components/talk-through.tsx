@@ -54,6 +54,8 @@ export function useTalkThrough(p: {
   const [preview, setPreview] = useState<{ clientId: string; items: ProposedComment[] } | null>(
     null,
   );
+  /** Preview "Re-anchor": the sheet hides, the reviewer taps the PDF, the new anchor comes back. */
+  const [reanchor, setReanchor] = useState<{ clientId: string; anchor?: PdfAnchor } | null>(null);
   const rec = useRef<Recorder | null>(null);
   const snaps = useRef<TimelineSnapshot[]>([]);
   const tapsRef = useRef<TimelineTap[]>([]);
@@ -317,6 +319,8 @@ export function useTalkThrough(p: {
     setNotice,
     preview,
     setPreview,
+    reanchor,
+    setReanchor,
     start,
     agree,
     stop,
@@ -424,15 +428,50 @@ export function PreviewSheet({
   onAccept,
 }: {
   tt: TalkThrough;
-  onAccept: (keep: CommentDraft[], discard: string[]) => void;
+  onAccept: (
+    keep: CommentDraft[],
+    discard: string[],
+    merges: { from: string; into: string }[],
+  ) => void;
 }) {
   const [items, setItems] = useState<ProposedComment[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
-  const open = !!tt.preview;
+  const [merges, setMerges] = useState<{ from: string; into: string }[]>([]);
+  const open = !!tt.preview && !tt.reanchor;
   useEffect(() => {
     setItems(tt.preview?.items ?? []);
     setRemoved([]);
+    setMerges([]);
   }, [tt.preview]);
+  // A re-anchor tap came back from the viewer: the reviewer pointed at it, so it's a tap anchor.
+  const { reanchor, setReanchor } = tt;
+  useEffect(() => {
+    if (!reanchor?.anchor) return;
+    const { clientId, anchor } = reanchor;
+    setItems((l) => l.map((x) => (x.clientId === clientId ? { ...x, anchor, source: 'tap' } : x)));
+    setReanchor(null);
+  }, [reanchor, setReanchor]);
+
+  /** Merge into the previous comment: words joined in order; the better anchor wins. */
+  function mergeUp(i: number) {
+    {
+      const l = items;
+      const prev = l[i - 1]!;
+      const cur = l[i]!;
+      const rank = { tap: 3, manual: 3, ai: 2, viewport: 1 } as const;
+      const keepCur = rank[cur.source] > rank[prev.source];
+      const merged: ProposedComment = {
+        ...prev,
+        text: `${prev.text.trim()} ${cur.text.trim()}`.trim(),
+        transcriptOriginal: `${prev.transcriptOriginal} ${cur.transcriptOriginal}`,
+        anchor: keepCur ? cur.anchor : prev.anchor,
+        source: keepCur ? cur.source : prev.source,
+        endMs: cur.endMs,
+      };
+      setMerges((m) => [...m, { from: cur.clientId, into: prev.clientId }]);
+      setItems([...l.slice(0, i - 1), merged, ...l.slice(i + 1)]);
+    }
+  }
 
   function accept() {
     const base = Date.now();
@@ -449,6 +488,7 @@ export function PreviewSheet({
           sortKey: base + i,
         })),
       [...removed, ...items.filter((c) => !c.text.trim()).map((c) => c.clientId)],
+      merges,
     );
     tt.setPreview(null);
   }
@@ -478,7 +518,18 @@ export function PreviewSheet({
                   </span>
                   {c.anchor && 'page' in c.anchor && <span>Page {c.anchor.page}</span>}
                   <button
-                    className="ml-auto text-red-700 underline"
+                    className="ml-auto underline"
+                    onClick={() => tt.setReanchor({ clientId: c.clientId })}
+                  >
+                    Re-anchor
+                  </button>
+                  {i > 0 && (
+                    <button className="underline" onClick={() => mergeUp(i)}>
+                      Merge with previous
+                    </button>
+                  )}
+                  <button
+                    className="text-red-700 underline"
                     onClick={() => {
                       setRemoved((r) => [...r, c.clientId]);
                       setItems((l) => l.filter((x) => x.clientId !== c.clientId));

@@ -5,7 +5,7 @@ import type { CommentDraft, SyncOp } from '@ft/shared';
  * Every change is written to IndexedDB first and queued; a queue entry is removed only after the
  * server ACKs that exact version. On reload, queued local changes are replayed over server state.
  */
-export type QueueEntry = { op: 'upsert' | 'delete'; v: number };
+export type QueueEntry = { op: 'upsert' | 'delete' | 'merge'; v: number; into?: string };
 export type DraftState = {
   comments: Record<string, CommentDraft>;
   queue: Record<string, QueueEntry>;
@@ -27,6 +27,13 @@ export function remove(s: DraftState, clientId: string): DraftState {
   return { comments, queue: { ...s.queue, [clientId]: { op: 'delete', v } } };
 }
 
+/** `from` was merged into `into` (preview): drop it locally; the server joins the originals. */
+export function mergeInto(s: DraftState, from: string, into: string): DraftState {
+  const { [from]: _gone, ...comments } = s.comments;
+  const v = (s.queue[from]?.v ?? 0) + 1;
+  return { comments, queue: { ...s.queue, [from]: { op: 'merge', v, into } } };
+}
+
 /** Ops to send, plus the queue versions they correspond to. */
 export function pendingOps(s: DraftState): { ops: SyncOp[]; versions: Record<string, number> } {
   const ops: SyncOp[] = [];
@@ -34,6 +41,7 @@ export function pendingOps(s: DraftState): { ops: SyncOp[]; versions: Record<str
   for (const [id, q] of Object.entries(s.queue)) {
     const c = s.comments[id];
     if (q.op === 'upsert' && c) ops.push({ op: 'upsert', comment: c });
+    else if (q.op === 'merge' && q.into) ops.push({ op: 'merge', from: id, into: q.into });
     else ops.push({ op: 'delete', clientId: id });
     versions[id] = q.v;
   }
@@ -53,7 +61,7 @@ export function merge(server: CommentDraft[], local: DraftState | null): DraftSt
   for (const c of server) comments[c.clientId] = c;
   const queue = { ...(local?.queue ?? {}) };
   for (const [id, q] of Object.entries(queue)) {
-    if (q.op === 'delete') delete comments[id];
+    if (q.op === 'delete' || q.op === 'merge') delete comments[id];
     else if (local?.comments[id]) comments[id] = local.comments[id];
     else delete queue[id];
   }

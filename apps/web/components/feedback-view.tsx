@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import type { PdfAnchor } from '@ft/shared';
+import { useMemo, useRef, useState } from 'react';
+import type { PdfAnchor, PdfPageAnchor } from '@ft/shared';
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
 import { btn } from './ui';
 
@@ -9,11 +9,25 @@ type Comment = {
   id: string;
   invite_id: string;
   text: string;
-  anchor: PdfAnchor | null;
+  anchor: PdfAnchor | PdfPageAnchor | null;
+  anchor_source: string | null;
   general: boolean;
   addressed_at: string | null;
   created_at: string;
+  recording_id: string | null;
+  span_start_ms: number | null;
+  span_end_ms: number | null;
+  transcript_original: string | null;
 };
+
+const SOURCE: Record<string, string> = {
+  tap: 'Tapped',
+  ai: 'Auto-placed',
+  viewport: 'On screen',
+  manual: 'Typed',
+  owner_moved: 'Moved by you',
+};
+const norm = (t: string) => t.replace(/\s+/g, ' ').trim().toLowerCase();
 type Reviewer = { id: string; name: string; submitted_at: string };
 
 /** SPEC §3.3: artifact left, comments right (desktop); artifact + bottom sheet (mobile). */
@@ -35,22 +49,75 @@ export function FeedbackView(p: {
   const pinned = visible.filter((c) => !c.general && c.anchor);
   const general = visible.filter((c) => c.general);
   const number = new Map(pinned.map((c, i) => [c.id, i + 1]));
-  const markers: PdfMarker[] = pinned.map((c) => ({
-    id: c.id,
-    n: number.get(c.id)!,
-    anchor: c.anchor!,
-    active: c.id === active,
-  }));
+  const markers: PdfMarker[] = pinned.flatMap((c) =>
+    c.anchor?.kind === 'pdf'
+      ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor, active: c.id === active }]
+      : [],
+  );
+
+  // One shared player: plays exactly the comment's span of the reviewer's recording.
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const urls = useRef(new Map<string, string>());
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [audioNote, setAudioNote] = useState<Record<string, string>>({});
+  async function play(c: Comment) {
+    if (!c.recording_id) return;
+    const el = (audio.current ??= new Audio());
+    if (playing === c.id) {
+      el.pause();
+      return setPlaying(null);
+    }
+    let url = urls.current.get(c.recording_id);
+    if (!url) {
+      const res = await fetch(
+        `/api/reviews/${p.reviewId}/recordings/${c.recording_id}/audio`,
+      ).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as {
+        url?: string;
+        error?: { message: string };
+      } | null;
+      if (!res?.ok || !body?.url)
+        return setAudioNote((n) => ({
+          ...n,
+          [c.id]: body?.error?.message ?? 'Couldn’t load the recording. Try again.',
+        }));
+      url = body.url;
+      urls.current.set(c.recording_id, url);
+    }
+    const start = (c.span_start_ms ?? 0) / 1000;
+    const end = c.span_end_ms ? c.span_end_ms / 1000 + 0.3 : Infinity;
+    el.src = url;
+    el.ontimeupdate = () => {
+      if (el.currentTime >= end) {
+        el.pause();
+        setPlaying(null);
+      }
+    };
+    el.onended = () => setPlaying(null);
+    el.onloadedmetadata = () => {
+      el.currentTime = start;
+      void el.play().catch(() => setPlaying(null));
+    };
+    el.load();
+    setPlaying(c.id);
+  }
   const open = pinned.filter((c) => !c.addressed_at).length;
 
   function goTo(id: string) {
     setActive(id);
     setSheetOpen(false);
     // Markers exist on every page (even before it renders), so this always lands on the anchor.
+    // Page-level ("On screen") comments scroll to the top of their page.
+    const c = comments.find((x) => x.id === id);
     requestAnimationFrame(() =>
-      document
-        .getElementById(`marker-${id}`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }),
+      (c?.anchor?.kind === 'pdf-page'
+        ? document.querySelector(`[data-page="${c.anchor.page}"]`)
+        : document.getElementById(`marker-${id}`)
+      )?.scrollIntoView({
+        behavior: 'smooth',
+        block: c?.anchor?.kind === 'pdf-page' ? 'start' : 'center',
+        inline: 'center',
+      }),
     );
   }
 
@@ -91,8 +158,13 @@ export function FeedbackView(p: {
             <span title="Reviewers type their own name">(self-reported)</span>
             {c.anchor ? ` · Page ${c.anchor.page}` : ' · General note'}
           </span>
+          {c.anchor_source && SOURCE[c.anchor_source] && (
+            <span className="rounded-full bg-paper px-2 py-0.5 font-medium text-ink ring-1 ring-line">
+              {SOURCE[c.anchor_source]}
+            </span>
+          )}
         </span>
-        {c.anchor?.textQuote && (
+        {c.anchor?.kind === 'pdf' && c.anchor.textQuote && (
           <span className="mt-1 block truncate border-l-2 border-amber-300 pl-2 text-xs text-muted">
             {c.anchor.textQuote.exact}
           </span>
@@ -103,10 +175,25 @@ export function FeedbackView(p: {
           {c.text}
         </span>
       </button>
-      <label className="mt-2 inline-flex items-center gap-2 text-xs">
-        <input type="checkbox" checked={!!c.addressed_at} onChange={() => void toggle(c)} />
-        Mark addressed
-      </label>
+      {c.transcript_original && norm(c.transcript_original) !== norm(c.text) && (
+        <details className="mt-1 text-xs text-muted">
+          <summary className="cursor-pointer">Original transcript</summary>
+          <p className="mt-1 whitespace-pre-wrap">{c.transcript_original}</p>
+        </details>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
+        {c.recording_id && (
+          <button className="font-medium underline" onClick={() => void play(c)}>
+            {playing === c.id ? 'Stop' : 'Play'}
+            <span className="sr-only"> recording for this comment</span>
+          </button>
+        )}
+        <label className="inline-flex items-center gap-2">
+          <input type="checkbox" checked={!!c.addressed_at} onChange={() => void toggle(c)} />
+          Mark addressed
+        </label>
+      </div>
+      {audioNote[c.id] && <p className="mt-1 text-xs text-muted">{audioNote[c.id]}</p>}
     </li>
   );
 

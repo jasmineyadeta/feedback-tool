@@ -36,8 +36,8 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 ## M3 — Talk-through recording (PDF first)
 - [x] Spike: whisper.cpp word-level timestamps on iPhone `audio/mp4` (switch to faster-whisper if unusable)
 - [x] Recorder, disclosure + consent, bar UI, IndexedDB buffer, upload, local transcription
-- [ ] Tap split, AI resolver + validator, split preview with "Looks good", edit/re-anchor/merge/delete
-- [ ] Owner audio playback, 90-day purge job
+- [x] Tap split, AI resolver + validator, split preview with "Looks good", edit/re-anchor/merge/delete
+- [x] Owner audio playback, 90-day purge job
 - [x] Transcriber/LLM down or slow → audio kept, `pending`, friendly message, retry with backoff
 - [x] `pnpm eval:anchors` (≥15 cases, ≥80% to adopt model) → `docs/ANCHOR_EVAL.md`
 - [x] ✅ Validator rejects reworded/missing/duplicated spans (property tests)
@@ -71,6 +71,11 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 ---
 
 ## Milestone summaries
+
+### M3 — done except the real-device check (2026-11-03)
+**Works:** spike chose whisper.cpp (≤0.54 s early, no VAD); Record with disclosure + consent; recording bar (pause/stop/cancel, 10-min cap); taps while talking; PDF timeline (visible lines every second); audio kept in IndexedDB (as bytes, Safari-safe) + memory until the server ACKs; upload with magic-byte checks; local transcription with retry/backoff and a "taking longer" message; tap split → AI placement (qwen3:14b via Ollama, prompt v2, 87% on `pnpm eval:anchors`, 4/6 held-out) → mandatory validator (property-tested) → viewport fallback; split preview with edit / re-anchor / merge (server-side) / delete / Looks good; owner badges, original transcript, clip playback; 90-day audio purge job. 10 talk-through e2e × 2 browsers.
+**Doesn't yet:** owner can't drag an auto-placed anchor; website reviews (M4).
+**Manual checks pending for Jas:** "M3 — Talk-through on real devices" in `docs/MANUAL_CHECKS.md` (iPhone + iPad recording; needs `pnpm dev:phone`). Also still open: "M2 — PDF reviewer on a real iPhone".
 
 ### M2 — done (2026-11-03)
 **Works:** owner magic-link sign-in (local inbox) + dev shortcut proven absent in production; PDF upload validated server-side (type, 15 MB, 30 pages); one-time reviewer links with revoke/delete; reviewer page with pdf.js viewer (lazy pages, zoom, text layer), tap-to-pin and select-to-quote anchors, typed comments, IndexedDB-first autosave with versioned ACK queue (survives refresh and offline), general note, submit with name/email (owner emailed, no content in email), read-only after submit; owner feedback view with markers, jump-to-anchor, reviewer filter, mark addressed. Unknown/revoked/deleted links share one 404 page. E2E: 7 reviewer/owner tests × chromium + webkit-iphone.

@@ -102,3 +102,14 @@ describe('recording buffer', () => {
     expect(await listRecordings('inv-a')).toEqual([]);
   });
 });
+
+describe('merge op', () => {
+  it('drops the merged comment locally and queues a merge for the server', async () => {
+    const { mergeInto } = await import('@/lib/client/drafts');
+    let s = upsert(emptyState(), c('keep01'));
+    s = mergeInto(s, 'gone01', 'keep01');
+    expect(Object.keys(s.comments)).toEqual(['keep01']);
+    expect(pendingOps(s).ops).toContainEqual({ op: 'merge', from: 'gone01', into: 'keep01' });
+    expect(merge([c('gone01')], s).comments.gone01).toBeUndefined(); // stays gone after reload
+  });
+});

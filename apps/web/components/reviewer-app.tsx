@@ -17,6 +17,7 @@ import {
   clearLocal,
   loadLocal,
   merge,
+  mergeInto,
   newClientId,
   pendingOps,
   remove,
@@ -182,6 +183,7 @@ export function ReviewerApp(p: Props) {
       new Set([...Object.keys(ref.current.comments), ...Object.keys(ref.current.queue)]),
   });
   const recording = tt.phase === 'recording';
+  const reanchoring = !!tt.reanchor && !tt.reanchor.anchor;
   const tapMarkers: PdfMarker[] = tt.taps.flatMap((t, i) =>
     t.fullAnchor.kind === 'pdf'
       ? [{ id: `tap-${i}`, n: i + 1, anchor: t.fullAnchor, active: true, label: `Tap ${i + 1}` }]
@@ -304,6 +306,17 @@ export function ReviewerApp(p: Props) {
           setPicking(true);
         }}
       />
+      {reanchoring && (
+        <p
+          className="flex shrink-0 items-center gap-3 bg-accent px-3 py-2 text-sm text-white"
+          role="status"
+        >
+          <span className="flex-1 text-center">Tap the spot this comment is about.</span>
+          <button className="underline" onClick={() => tt.setReanchor(null)}>
+            Cancel
+          </button>
+        </p>
+      )}
       {picking && !recording && (
         <p className="shrink-0 bg-accent px-3 py-2 text-center text-sm text-white" role="status">
           Tap the spot your comment is about.
@@ -315,9 +328,10 @@ export function ReviewerApp(p: Props) {
             url={p.pdfUrl}
             pageCount={p.pageCount}
             markers={recording ? [...markers, ...tapMarkers] : markers}
-            picking={picking || recording}
+            picking={picking || recording || reanchoring}
             onPick={(anchor) => {
               if (recording) return tt.tap(anchor);
+              if (reanchoring) return tt.setReanchor({ clientId: tt.reanchor!.clientId, anchor });
               setPicking(false);
               setComposer({ clientId: null, anchor, text: '' });
             }}
@@ -493,8 +507,9 @@ export function ReviewerApp(p: Props) {
       <ConsentSheet tt={tt} />
       <PreviewSheet
         tt={tt}
-        onAccept={(keep, discard) => {
+        onAccept={(keep, discard, merges) => {
           let next = ref.current;
+          for (const m of merges) next = mergeInto(next, m.from, m.into);
           for (const c of keep) next = upsert(next, c);
           for (const id of discard) next = remove(next, id);
           commit(next);

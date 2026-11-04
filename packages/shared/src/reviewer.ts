@@ -25,6 +25,8 @@ export type CommentDraft = z.infer<typeof CommentDraft>;
 export const SyncOp = z.discriminatedUnion('op', [
   z.object({ op: z.literal('upsert'), comment: CommentDraft }),
   z.object({ op: z.literal('delete'), clientId: ClientId }),
+  /** Preview "Merge with previous": the server joins the original transcripts itself. */
+  z.object({ op: z.literal('merge'), from: ClientId, into: ClientId }),
 ]);
 export type SyncOp = z.infer<typeof SyncOp>;
 

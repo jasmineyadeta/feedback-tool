@@ -75,7 +75,10 @@ export async function applySync(ctx: ReviewerCtx, ops: SyncOp[]): Promise<{ acke
   const inviteId = ctx.invite.id;
   const upserts = new Map<string, CommentDraft>();
   const deletes = new Set<string>();
+  const merges = ops.filter((o): o is Extract<SyncOp, { op: 'merge' }> => o.op === 'merge');
+  for (const m of merges) await mergeDraft(inviteId, m.from, m.into);
   for (const op of ops) {
+    if (op.op === 'merge') continue;
     if (op.op === 'upsert') {
       upserts.set(op.comment.clientId, op.comment);
       deletes.delete(op.comment.clientId);
@@ -136,7 +139,50 @@ export async function applySync(ctx: ReviewerCtx, ops: SyncOp[]): Promise<{ acke
       if (moved?.length) await logEvent(ctx.review.id, inviteId, 'first_comment_saved', {});
     }
   }
-  return { acked: [...upserts.keys(), ...deletes] };
+  return { acked: [...upserts.keys(), ...deletes, ...merges.map((m) => m.from)] };
+}
+
+/**
+ * Join a recording draft into another (preview "Merge with previous"). The server combines the
+ * original transcripts and time spans itself, so the owner's "original transcript" stays trustworthy.
+ * Idempotent: once `from` is gone, a retried op does nothing.
+ */
+async function mergeDraft(inviteId: string, from: string, into: string) {
+  if (from === into) return;
+  const admin = adminClient();
+  const { data } = await admin
+    .from('comments')
+    .select('client_id,state,transcript_original,span_start_ms,span_end_ms')
+    .eq('invite_id', inviteId)
+    .in('client_id', [from, into]);
+  const src = data?.find((r) => r.client_id === from);
+  const dst = data?.find((r) => r.client_id === into);
+  if (!src || src.state !== 'draft') return;
+  if (dst) {
+    const num = (v: unknown) => (typeof v === 'number' ? v : null);
+    const starts = [num(dst.span_start_ms), num(src.span_start_ms)].filter((v) => v !== null);
+    const ends = [num(dst.span_end_ms), num(src.span_end_ms)].filter((v) => v !== null);
+    const { error } = await admin
+      .from('comments')
+      .update({
+        transcript_original: [dst.transcript_original, src.transcript_original]
+          .filter(Boolean)
+          .join(' ')
+          .slice(0, 20_000),
+        span_start_ms: starts.length ? Math.min(...starts) : null,
+        span_end_ms: ends.length ? Math.max(...ends) : null,
+      })
+      .eq('invite_id', inviteId)
+      .eq('client_id', into);
+    if (error) throw error;
+  }
+  const { error } = await admin
+    .from('comments')
+    .delete()
+    .eq('invite_id', inviteId)
+    .eq('client_id', from)
+    .eq('state', 'draft');
+  if (error) throw error;
 }
 
 export async function submitInvite(ctx: ReviewerCtx, input: { name: string; email: string }) {
