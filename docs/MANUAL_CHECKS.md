@@ -2,6 +2,8 @@
 
 Things automation can't cover (real devices, real mic). Each has steps and what "good" looks like. Tick when done.
 
+**Simulator is fine for now (Jas, 2026-11-04).** Any check below can be done in the iOS Simulator instead of a real iPhone: open Xcode's Simulator, run `pnpm dev` (no tunnel needed, because the Simulator reaches `localhost`), and open the links in its Safari. Click to tap; the Simulator uses the Mac's microphone. Real-device checks are still worth doing before real reviewers use it (Phase B).
+
 ## M2 — PDF reviewer on a real iPhone
 - [ ] Run `pnpm dev:phone`, create a PDF review on the laptop, open the reviewer link on the iPhone (Safari).
   - Good: PDF is sharp, pinch/scroll feel normal, zoom buttons work, "Page n of N" updates.
@@ -35,3 +37,12 @@ Use three real portfolio sites you know: at least one **Framer** and one **Webfl
   - Good: it jumps to the right page and outlines the right element. If a site has changed since, you see the screenshot from the review with the marker.
 - [ ] For any site that came out in **Screenshot mode**: open its reviewer link.
   - Good: the yellow **Screenshot** label says it's a picture, not the live site; tapping it adds a comment.
+
+## M6 — Full review on the phone (see `docs/DEMO_SCRIPT.md`)
+Done by the agent in the iOS Simulator (iPhone 17, Safari), 2026-11-04, with `pnpm dev`:
+- [x] A PDF reviewer link opens and renders: coach mark, toolbar, zoom and "Page 1 of 2" (`docs/changelog/img/m6-simulator-pdf-iphone17.png`).
+- [x] A real Framer site (`jason-ng.space`) was created as a Website review, came out **Live site**, and renders live through the proxy in Safari (`docs/changelog/img/m6-simulator-framer-iphone17.png`).
+
+The agent can open pages in the Simulator but can't tap or talk in it. Left for Jas (Simulator or iPhone):
+- [ ] Follow `docs/DEMO_SCRIPT.md` steps 3–4 end to end as the reviewer: typed comment, talk-through with your voice, submit, then read it as the owner.
+  - Good: every step fits the screen, taps land where you meant, and every comment appears in the right place for the owner.

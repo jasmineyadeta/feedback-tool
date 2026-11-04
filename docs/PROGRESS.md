@@ -64,13 +64,30 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 ## M6 — Phase A wrap-up
 - [x] Privacy notice (audio stays on this computer), takedown/contact page
 - [x] Rate limits verified; metrics SQL views (PRD §15)
-- [ ] `docs/DEMO_SCRIPT.md`, `docs/PHASE_B_PLAN.md`
+- [x] `docs/DEMO_SCRIPT.md`, `docs/PHASE_B_PLAN.md`
 - [x] ✅ Load smoke: 10 concurrent simulated reviewers locally without errors
 - [ ] *Manual:* Jas completes a full review as reviewer on her iPhone through the tunnel
 
 ---
 
 ## Milestone summaries
+
+### M6 — done except the interactive phone check (2026-11-04). Phase A complete; M7 not started.
+**Works:**
+- `/privacy` (Phase A wording) and `/contact` (takedown; `CONTACT_EMAIL`, honest when unset), linked from home, sign-in, the consent sheet and the submit sheet.
+- Metrics views for PRD §15 plus `pnpm metrics`.
+- Rate limits verified: token bucket under concurrency, plus a 429 from a real route.
+- Load smoke: 10 concurrent reviewers in ~7.5 s with no errors, in `pnpm verify`.
+- Fixed a leftover-review bug on rejected PDF uploads.
+- `docs/DEMO_SCRIPT.md` and `docs/PHASE_B_PLAN.md`.
+- Simulator check: PDF and a real Framer site render in iOS Safari.
+
+**Doesn't yet:**
+- No takedown form (email only).
+- No "autosave failed" metric.
+- The load smoke uses the mock transcriber.
+
+**Manual checks pending for Jas:** the interactive full review (Simulator is OK), plus the earlier M2–M4 checks. **Decisions for M7:** see `docs/PHASE_B_PLAN.md` §1.
 
 ### M5 — done (2026-11-04)
 **Works:** link-only owner email on submit (plain + HTML, self-reported name flattened/escaped, "your site"/"your PDF"); invite statuses per D20 verified end to end (opening a link isn't tracked); mark addressed + general note (from M2); `pnpm smoke:mail` proves the local Mailer reaches the local inbox. Accessibility: axe gate (zero serious/critical) over 20 page states in both browsers; focusable scroll regions; keyboard-only commenting on PDFs, live sites (Enter on focused site controls, overlay 0.3.0) and screenshots; Escape cancels; screen-reader hints; site-wide not-found and error pages; slow-site message after 15 s.
