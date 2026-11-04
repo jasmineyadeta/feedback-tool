@@ -187,6 +187,9 @@ export async function finalizePdf(review: ReviewRow) {
   const check = await validatePdf(new Uint8Array(await data.arrayBuffer()));
   if (!check.ok) {
     await store.remove([key]);
+    // A brand-new review whose first upload is rejected is removed here, in the same request,
+    // so nothing is left behind even if the owner leaves the page straight away.
+    if (!review.pdf_file_key) await deleteReview(review);
     throw new UserError(400, check.message, check.code);
   }
   const sb = await userClient();

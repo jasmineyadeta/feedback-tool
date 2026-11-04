@@ -62,10 +62,10 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [x] ✅ Email sent in e2e (`Mailer.mock`; local inbox verified in a live-dev smoke test)
 
 ## M6 — Phase A wrap-up
-- [ ] Privacy notice (audio stays on this computer), takedown/contact page
-- [ ] Rate limits verified; metrics SQL views (PRD §15)
+- [x] Privacy notice (audio stays on this computer), takedown/contact page
+- [x] Rate limits verified; metrics SQL views (PRD §15)
 - [ ] `docs/DEMO_SCRIPT.md`, `docs/PHASE_B_PLAN.md`
-- [ ] ✅ Load smoke: 10 concurrent simulated reviewers locally without errors
+- [x] ✅ Load smoke: 10 concurrent simulated reviewers locally without errors
 - [ ] *Manual:* Jas completes a full review as reviewer on her iPhone through the tunnel
 
 ---

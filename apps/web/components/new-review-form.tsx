@@ -74,13 +74,16 @@ export function NewReviewForm() {
     const fin = await fetch(`/api/reviews/${id}/pdf`, { method: 'POST' }).catch(() => null);
     if (!fin?.ok) {
       setBusy(null);
-      setError(await errMsg(fin));
-      await fetch(`/api/reviews/${id}`, {
-        method: 'DELETE',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ confirm: 'delete' }),
-      }).catch(() => null);
-      return;
+      const message = await errMsg(fin);
+      // A rejected PDF is already removed by the server (finalizePdf). If the request never
+      // arrived, clean up here — before showing the error, so leaving the page can't skip it.
+      if (!fin)
+        await fetch(`/api/reviews/${id}`, {
+          method: 'DELETE',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ confirm: 'delete' }),
+        }).catch(() => null);
+      return setError(message);
     }
     router.push(`/reviews/${id}`);
   }

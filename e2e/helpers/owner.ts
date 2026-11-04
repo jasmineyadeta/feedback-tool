@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 let env: Record<string, string> | null = null;
 export function sb() {
@@ -54,6 +54,10 @@ export async function createSiteReview(page: Page, opts: { url: string; title?: 
 
 export async function createInvite(page: Page, name = ''): Promise<string> {
   if (name) await page.getByLabel(/Reviewer name/).fill(name);
+  const field = page.getByLabel('Reviewer link');
+  // When called twice in a row the previous link is still on screen: wait for the new one.
+  const before = (await field.count()) ? await field.inputValue() : '';
   await page.getByRole('button', { name: 'Create reviewer link' }).click();
-  return page.getByLabel('Reviewer link').inputValue();
+  await expect(field).not.toHaveValue(before || /^$/);
+  return field.inputValue();
 }
