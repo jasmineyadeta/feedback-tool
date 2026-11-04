@@ -1,4 +1,6 @@
+import { snapshotsFor, validateSpans } from './validate-spans';
 import type {
+  AnchorResolver,
   Anchor,
   CommentSource,
   ProposedComment,
@@ -128,4 +130,85 @@ export function resolveDeterministic(
 ): ProposedComment[] {
   const segs = fillViewport(words, tapSplit(words, timeline.taps), timeline);
   return toProposed(recordingClientId, words, mergeShort(segs));
+}
+
+// ---------------------------------------------------------------- AI pass (SPEC §5.2 steps 2–4)
+const MIN_CONFIDENCE = 0.6;
+
+export type AiStats = { asked: number; rejected: string[] };
+
+/**
+ * Taps first (never re-anchored); the AI only sees untapped segments; its output must pass the
+ * validator or it's discarded for that segment. Low confidence / no eid → viewport anchor.
+ * Resolver errors (LLM down/slow) propagate so the caller can retry — unless `fallbackOnError`.
+ */
+export async function resolveWithAI(
+  recordingClientId: string,
+  words: TranscriptWord[],
+  timeline: Timeline,
+  resolver: AnchorResolver,
+  opts: { fallbackOnError?: boolean } = {},
+): Promise<{ proposed: ProposedComment[]; stats: AiStats }> {
+  const stats: AiStats = { asked: 0, rejected: [] };
+  const out: Segment[] = [];
+  for (const seg of tapSplit(words, timeline.taps)) {
+    if (seg.tap) {
+      out.push(seg); // Tap overrides AI: never sent to the model.
+      continue;
+    }
+    const first = seg.from;
+    const last = seg.to - 1;
+    let raw: unknown;
+    try {
+      stats.asked++;
+      raw = await resolver.resolve({
+        firstWord: first,
+        lastWord: last,
+        words,
+        snapshots: snapshotsFor(timeline, words[first]!.start * 1000, words[last]!.end * 1000),
+      });
+    } catch (e) {
+      if (!opts.fallbackOnError) throw e;
+      stats.rejected.push('resolver_error');
+      out.push(seg);
+      continue;
+    }
+    const v = validateSpans(raw, { first, last }, words, timeline);
+    if (!v.ok) {
+      stats.rejected.push(v.reason);
+      out.push(seg); // viewport fallback below
+      continue;
+    }
+    for (const s of v.spans) {
+      const el =
+        s.eid && s.confidence >= MIN_CONFIDENCE ? elementAnchor(timeline, s.eid, words, s) : null;
+      out.push({
+        from: s.from,
+        to: s.to,
+        tap: null,
+        anchor: el,
+        source: el ? 'ai' : 'viewport',
+      });
+    }
+  }
+  const segs = fillViewport(words, out, timeline);
+  return { proposed: toProposed(recordingClientId, words, mergeShort(segs)), stats };
+}
+
+/** The element's stored anchor from the snapshot nearest the span's midpoint that contains it. */
+function elementAnchor(
+  timeline: Timeline,
+  eid: string,
+  words: TranscriptWord[],
+  s: { from: number; to: number },
+): Anchor | null {
+  const mid = ((words[s.from]!.start + words[s.to - 1]!.end) / 2) * 1000;
+  let best: { d: number; a: Anchor } | null = null;
+  for (const snap of timeline.snapshots) {
+    const el = snap.elements.find((e) => e.eid === eid);
+    if (!el?.anchor) continue;
+    const d = Math.abs(snap.t - mid);
+    if (!best || d < best.d) best = { d, a: el.anchor };
+  }
+  return best?.a ?? null;
 }

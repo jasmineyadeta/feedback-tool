@@ -13,9 +13,9 @@ import {
 import { adminClient } from './supabase';
 import { UserError } from './reviews';
 import type { ReviewerCtx } from './reviewer';
-import { transcriber } from './adapters';
+import { anchorResolver, transcriber } from './adapters';
 import { logEvent } from './events';
-import { resolveDeterministic } from './resolve';
+import { resolveWithAI } from './resolve';
 
 /**
  * Talk-through recordings (SPEC §3.2 steps 3–5, §5). The audio is stored before anything else
@@ -169,10 +169,14 @@ export async function processRecording(
       new Uint8Array(await file.data.arrayBuffer()),
       r.mime_type,
     );
-    const proposed = resolveDeterministic(
+    // LLM down/slow → retry the whole attempt; from the 3rd attempt on, place comments without AI
+    // ("On screen") rather than keep the reviewer waiting.
+    const { proposed, stats } = await resolveWithAI(
       r.client_id,
       words,
       r.timeline ?? { snapshots: [], taps: [] },
+      anchorResolver(),
+      { fallbackOnError: attempts >= 3 },
     );
     await saveProposals(r, proposed);
     await admin
@@ -189,11 +193,15 @@ export async function processRecording(
       .select('review_id')
       .eq('id', r.invite_id)
       .single();
-    if (inv)
+    if (inv) {
       await logEvent(inv.review_id as string, r.invite_id, 'recording_transcribed', {
         durationMs: r.duration_ms,
         comments: proposed.length,
+        aiSegments: stats.asked,
       });
+      for (const reason of stats.rejected)
+        await logEvent(inv.review_id as string, r.invite_id, 'ai_anchor_rejected', { reason });
+    }
     return 'ok';
   } catch (e) {
     console.error('recording attempt failed', attempts, e instanceof Error ? e.name : 'unknown');
