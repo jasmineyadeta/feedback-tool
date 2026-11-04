@@ -51,7 +51,10 @@ export function StatusBadge({ status }: { status: string }) {
           ? 'bg-blue-50 text-blue-800 ring-blue-200'
           : 'bg-white text-muted ring-line';
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${tone}`}>
+    <span
+      data-testid="invite-status"
+      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${tone}`}
+    >
       {STATUS[status] ?? status}
     </span>
   );

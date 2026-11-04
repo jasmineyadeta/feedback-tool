@@ -279,13 +279,48 @@ async function notifyOwner(ctx: ReviewerCtx, reviewerName: string) {
   const { data } = await adminClient().auth.admin.getUserById(ctx.review.owner_id);
   const to = data.user?.email;
   if (!to) return;
-  const link = `${env().APP_ORIGIN}/reviews/${ctx.review.id}/feedback`;
-  const title = ctx.review.title || 'your PDF';
-  await mailer().send({
-    to,
-    subject: `${reviewerName} sent feedback on ${title}`,
-    text: `${reviewerName} finished reviewing ${title}.\n\nRead their feedback: ${link}\n`,
-  });
+  await mailer().send(
+    ownerEmail({
+      to,
+      reviewerName,
+      title: ctx.review.title,
+      artifact: ctx.review.artifact_type,
+      link: `${env().APP_ORIGIN}/reviews/${ctx.review.id}/feedback`,
+    }),
+  );
+}
+
+const oneLine = (s: string, max: number) =>
+  s
+    .replace(/\p{Cc}+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+const esc = (s: string) =>
+  s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
+
+/**
+ * "Feedback is ready" email (M5). Link only: no comment text, no reviewer email, no artifact content.
+ * Names are self-reported, so they're flattened to one line (no header tricks) and escaped in HTML.
+ */
+export function ownerEmail(p: {
+  to: string;
+  reviewerName: string;
+  title: string;
+  artifact: 'pdf' | 'website';
+  link: string;
+}) {
+  const name = oneLine(p.reviewerName, 80) || 'A reviewer';
+  const what = oneLine(p.title, 120) || (p.artifact === 'pdf' ? 'your PDF' : 'your site');
+  return {
+    to: p.to,
+    subject: `${name} sent feedback on ${what}`,
+    text: `${name} finished reviewing ${what}.\n\nRead their feedback: ${p.link}\n\nYou're getting this because you asked for feedback with this tool.\n`,
+    html: `<p>${esc(name)} finished reviewing ${esc(what)}.</p><p><a href="${esc(p.link)}">Read their feedback</a></p><p style="color:#666;font-size:13px">You're getting this because you asked for feedback with this tool.</p>`,
+  };
 }
 
 type DraftAnchor = NonNullable<CommentDraft['anchor']>;

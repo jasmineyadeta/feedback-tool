@@ -56,10 +56,10 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 - [ ] *Manual:* 3 live Framer/Webflow sites on real iPhone
 
 ## M5 — Notifications, status, polish
-- [ ] Owner email on submit (link only), invite statuses (D20), mark addressed, general note
+- [x] Owner email on submit (link only), invite statuses (D20), mark addressed, general note
 - [ ] Empty/loading/error states; accessibility pass (keyboard, labels, focus, non-color markers)
 - [ ] ✅ axe: zero serious/critical violations on key pages
-- [ ] ✅ Email sent in e2e (`Mailer.mock`; local inbox verified in a live-dev smoke test)
+- [x] ✅ Email sent in e2e (`Mailer.mock`; local inbox verified in a live-dev smoke test)
 
 ## M6 — Phase A wrap-up
 - [ ] Privacy notice (audio stays on this computer), takedown/contact page

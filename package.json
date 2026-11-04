@@ -23,7 +23,8 @@
     "gate": "tsx scripts/gate.ts",
     "eval:anchors": "tsx --conditions=react-server scripts/eval-anchors.ts",
     "test:live-ai": "MOCK_AI=0 vitest run --project live-ai",
-    "jobs:run": "pnpm --filter @ft/web jobs:run"
+    "jobs:run": "pnpm --filter @ft/web jobs:run",
+    "smoke:mail": "vitest run --project live-ai apps/web/test/live/mailer.test.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
