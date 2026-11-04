@@ -5,6 +5,7 @@ import { hashToken, signedPdfUrl, UserError, type InviteRow, type ReviewRow } fr
 import { logEvent } from './events';
 import { mailer } from './adapters';
 import { env } from './env';
+import { proxyEnterUrl } from './proxy';
 
 /**
  * Reviewer side. Reviewers have no account: the invite token in the URL is the credential.
@@ -38,6 +39,29 @@ export async function resolveInvite(token: string): Promise<ReviewerCtx | null> 
 
 export async function reviewerPdfUrl(ctx: ReviewerCtx) {
   return signedPdfUrl(ctx.review);
+}
+
+/** What the reviewer's viewer loads. Live sites get a fresh proxy entry URL (token TTL 6 h). */
+export type ReviewerArtifact =
+  | { kind: 'pdf'; url: string; pageCount: number }
+  | { kind: 'site'; enterUrl: string; proxyOrigin: string; startPath: string };
+
+export async function reviewerArtifact(ctx: ReviewerCtx): Promise<ReviewerArtifact | null> {
+  const r = ctx.review;
+  if (r.artifact_type === 'pdf') {
+    const url = await signedPdfUrl(r);
+    return url ? { kind: 'pdf', url, pageCount: r.pdf_page_count ?? 1 } : null;
+  }
+  if (r.render_mode !== 'live' || !r.site_url || !r.site_etld1) return null; // Screenshot mode: next slice
+  const site = new URL(r.site_url);
+  const startPath = `${site.pathname}${site.search}`;
+  const enter = await proxyEnterUrl({
+    reviewId: r.id,
+    siteUrl: site,
+    etld1: r.site_etld1,
+    path: startPath,
+  });
+  return { kind: 'site', enterUrl: enter.url, proxyOrigin: enter.origin, startPath };
 }
 
 export async function listInviteComments(inviteId: string): Promise<ReviewerComment[]> {
@@ -87,9 +111,12 @@ export async function applySync(ctx: ReviewerCtx, ops: SyncOp[]): Promise<{ acke
       upserts.delete(op.clientId);
     }
   }
-  for (const c of upserts.values())
-    if (c.anchor && ctx.review.pdf_page_count && c.anchor.page > ctx.review.pdf_page_count)
-      throw new UserError(400, 'That comment points at a page that doesn’t exist.', 'invalid');
+  for (const c of upserts.values()) {
+    if (!c.anchor) continue;
+    if (!anchorFits(ctx.review, c.anchor))
+      throw new UserError(400, 'That comment points at something outside this review.', 'invalid');
+    c.anchor = cleanAnchor(ctx.review, c.anchor);
+  }
 
   if (deletes.size) {
     const { error } = await admin
@@ -120,7 +147,8 @@ export async function applySync(ctx: ReviewerCtx, ops: SyncOp[]): Promise<{ acke
       text: c.text,
       anchor: c.general ? null : c.anchor,
       anchor_source: c.anchor && !c.general ? (c.source ?? 'manual') : null,
-      pdf_page: c.anchor && !c.general ? c.anchor.page : null,
+      pdf_page: c.anchor && !c.general && 'page' in c.anchor ? c.anchor.page : null,
+      page_path: c.anchor && !c.general && 'pagePath' in c.anchor ? c.anchor.pagePath : null,
       general: c.general,
       sort_key: c.sortKey,
       state: 'saved',
@@ -240,4 +268,24 @@ async function notifyOwner(ctx: ReviewerCtx, reviewerName: string) {
     subject: `${reviewerName} sent feedback on ${title}`,
     text: `${reviewerName} finished reviewing ${title}.\n\nRead their feedback: ${link}\n`,
   });
+}
+
+type DraftAnchor = NonNullable<CommentDraft['anchor']>;
+
+/** An anchor must match the review: PDF pages that exist; DOM/viewport for live sites; screenshot otherwise. */
+export function anchorFits(
+  review: Pick<ReviewRow, 'artifact_type' | 'render_mode' | 'pdf_page_count'>,
+  a: DraftAnchor,
+): boolean {
+  if (review.artifact_type === 'pdf')
+    return (a.kind === 'pdf' || a.kind === 'pdf-page') && a.page <= (review.pdf_page_count ?? 30);
+  if (review.render_mode === 'screenshot') return a.kind === 'screenshot';
+  return a.kind === 'dom' || a.kind === 'viewport';
+}
+
+/** Never store the proxy URL or query strings (may hold PII): pageUrl becomes site origin + path. */
+export function cleanAnchor(review: Pick<ReviewRow, 'site_url'>, a: DraftAnchor): DraftAnchor {
+  if ((a.kind === 'dom' || a.kind === 'viewport') && review.site_url)
+    return { ...a, pageUrl: new URL(a.pagePath, review.site_url).origin + a.pagePath };
+  return a;
 }

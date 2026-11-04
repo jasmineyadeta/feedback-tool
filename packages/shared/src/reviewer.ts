@@ -1,5 +1,12 @@
 import * as z from 'zod/mini';
-import { Anchor, PdfAnchor, PdfPageAnchor } from './anchor';
+import {
+  Anchor,
+  DomAnchor,
+  PdfAnchor,
+  PdfPageAnchor,
+  ScreenshotAnchor,
+  ViewportAnchor,
+} from './anchor';
 import { Timeline } from './timeline';
 import { LIMITS } from './limits';
 
@@ -14,7 +21,15 @@ export const GENERAL_NOTE_ID = 'general-note';
 export const CommentDraft = z.object({
   clientId: ClientId,
   text: z.string().check(z.minLength(1), z.maxLength(LIMITS.commentMaxChars)),
-  anchor: z.nullable(z.discriminatedUnion('kind', [PdfAnchor, PdfPageAnchor])),
+  anchor: z.nullable(
+    z.discriminatedUnion('kind', [
+      PdfAnchor,
+      PdfPageAnchor,
+      DomAnchor,
+      ViewportAnchor,
+      ScreenshotAnchor,
+    ]),
+  ),
   general: z.boolean(),
   /** Where the anchor came from (shown to the owner as a badge). Defaults to manual. */
   source: z.optional(z.enum(['tap', 'ai', 'viewport', 'manual'])),

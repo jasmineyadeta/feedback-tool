@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { GENERAL_NOTE_ID, LIMITS, type CommentDraft, type PdfAnchor } from '@ft/shared';
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
+import { SiteViewer, type SiteFocus, type SiteMarker } from './site-viewer';
+import { anchorLabel, quoteOf, type ReviewerArtifact } from '@/lib/artifact';
 import { btn } from './ui';
 import {
   ConsentSheet,
@@ -32,8 +34,7 @@ type Props = {
   inviteId: string;
   title: string;
   context: string;
-  pageCount: number;
-  pdfUrl: string;
+  artifact: ReviewerArtifact;
   nameHint: string;
   submittedAt: string | null;
   initialComments: CommentDraft[];
@@ -41,9 +42,8 @@ type Props = {
 };
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error';
-type AnyPdfAnchor = NonNullable<CommentDraft['anchor']>;
-type Composer = { clientId: string | null; anchor: AnyPdfAnchor; text: string };
-const quoteOf = (a: AnyPdfAnchor | null | undefined) => (a?.kind === 'pdf' ? a.textQuote : null);
+type DraftAnchor = NonNullable<CommentDraft['anchor']>;
+type Composer = { clientId: string | null; anchor: DraftAnchor; text: string };
 
 const SAVE_LABEL: Record<SaveStatus, string> = {
   idle: '',
@@ -67,6 +67,9 @@ export function ReviewerApp(p: Props) {
   const [contextOpen, setContextOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [coach, setCoach] = useState(false);
+  const [focus, setFocus] = useState<SiteFocus | null>(null);
+  const art = p.artifact;
+  const canRecord = art.kind === 'pdf'; // website talk-through: next slice
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inflight = useRef<Promise<boolean> | null>(null);
   const readOnly = !!submittedAt;
@@ -174,6 +177,9 @@ export function ReviewerApp(p: Props) {
       ? [{ id: c.clientId, n: i + 1, anchor: c.anchor, active: c.clientId === active }]
       : [],
   );
+  const siteMarkers: SiteMarker[] = list.flatMap((c, i) =>
+    c.anchor?.kind === 'dom' ? [{ id: c.clientId, n: i + 1, anchor: c.anchor }] : [],
+  );
   const pending = Object.keys(state.queue).length;
   const tt = useTalkThrough({
     token: p.token,
@@ -234,6 +240,12 @@ export function ReviewerApp(p: Props) {
   function focusComment(id: string) {
     setActive(id);
     setListOpen(false);
+    const c = ref.current.comments[id];
+    if (art.kind === 'site' && c?.anchor) {
+      const n = list.findIndex((x) => x.clientId === id) + 1;
+      setFocus((f) => ({ anchor: c.anchor!, label: String(n), seq: (f?.seq ?? 0) + 1 }));
+      return;
+    }
     document
       .getElementById(`marker-${id}`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
@@ -242,7 +254,9 @@ export function ReviewerApp(p: Props) {
   const header = (
     <header className="flex shrink-0 items-center gap-3 border-b border-line bg-white px-3 py-2">
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-sm font-semibold">{p.title || 'PDF review'}</h1>
+        <h1 className="truncate text-sm font-semibold">
+          {p.title || (art.kind === 'pdf' ? 'PDF review' : 'Website review')}
+        </h1>
         {p.context && (
           <button
             className="text-xs text-muted underline"
@@ -258,13 +272,15 @@ export function ReviewerApp(p: Props) {
       </span>
       {!readOnly && (
         <div className="hidden gap-2 md:flex">
-          <button
-            className={`${btn.primary} bg-rec`}
-            disabled={busyRecording}
-            onClick={() => void tt.start()}
-          >
-            Record
-          </button>
+          {canRecord && (
+            <button
+              className={`${btn.primary} bg-rec`}
+              disabled={busyRecording}
+              onClick={() => void tt.start()}
+            >
+              Record
+            </button>
+          )}
           <button
             className={btn.secondary}
             disabled={busyRecording}
@@ -324,23 +340,37 @@ export function ReviewerApp(p: Props) {
       )}
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1">
-          <PdfViewer
-            url={p.pdfUrl}
-            pageCount={p.pageCount}
-            markers={recording ? [...markers, ...tapMarkers] : markers}
-            picking={picking || recording || reanchoring}
-            onPick={(anchor) => {
-              if (recording) return tt.tap(anchor);
-              if (reanchoring) return tt.setReanchor({ clientId: tt.reanchor!.clientId, anchor });
-              setPicking(false);
-              setComposer({ clientId: null, anchor, text: '' });
-            }}
-            onSelection={readOnly ? undefined : setSelection}
-            onMarker={(id) => {
-              setActive(id);
-              setListOpen(true);
-            }}
-          />
+          {art.kind === 'site' ? (
+            <SiteViewer
+              enterUrl={art.enterUrl}
+              proxyOrigin={art.proxyOrigin}
+              markers={siteMarkers}
+              mode={picking ? 'pick' : 'browse'}
+              focus={focus}
+              onPick={(anchor) => {
+                setPicking(false);
+                setComposer({ clientId: null, anchor, text: '' });
+              }}
+            />
+          ) : (
+            <PdfViewer
+              url={art.url}
+              pageCount={art.pageCount}
+              markers={recording ? [...markers, ...tapMarkers] : markers}
+              picking={picking || recording || reanchoring}
+              onPick={(anchor) => {
+                if (recording) return tt.tap(anchor);
+                if (reanchoring) return tt.setReanchor({ clientId: tt.reanchor!.clientId, anchor });
+                setPicking(false);
+                setComposer({ clientId: null, anchor, text: '' });
+              }}
+              onSelection={readOnly ? undefined : setSelection}
+              onMarker={(id) => {
+                setActive(id);
+                setListOpen(true);
+              }}
+            />
+          )}
         </div>
         <aside
           className={`${listOpen ? 'fixed inset-x-0 bottom-0 z-30 max-h-[70dvh] rounded-t-xl shadow-2xl' : 'hidden'} flex-col overflow-auto border-l border-line bg-white md:static md:flex md:max-h-none md:w-80 md:rounded-none md:shadow-none`}
@@ -366,12 +396,12 @@ export function ReviewerApp(p: Props) {
               >
                 <button className="block w-full text-left" onClick={() => focusComment(c.clientId)}>
                   <span className="text-xs text-muted">
-                    {i + 1} · Page {c.anchor?.page}
+                    {i + 1} · {anchorLabel(c.anchor)}
                     {state.queue[c.clientId] ? ' · not synced yet' : ''}
                   </span>
                   {quoteOf(c.anchor) && (
                     <span className="mt-1 block truncate border-l-2 border-amber-300 pl-2 text-xs text-muted">
-                      {quoteOf(c.anchor)!.exact}
+                      {quoteOf(c.anchor)}
                     </span>
                   )}
                   <span className="mt-1 block whitespace-pre-wrap">{c.text}</span>
@@ -409,15 +439,17 @@ export function ReviewerApp(p: Props) {
       {/* Mobile action bar */}
       {!readOnly && (
         <nav
-          className={`${recording ? 'hidden' : 'grid'} shrink-0 grid-cols-4 gap-1.5 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden`}
+          className={`${recording ? 'hidden' : 'grid'} shrink-0 ${canRecord ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden`}
         >
-          <button
-            className={`${btn.primary} bg-rec px-2`}
-            disabled={busyRecording}
-            onClick={() => void tt.start()}
-          >
-            Record
-          </button>
+          {canRecord && (
+            <button
+              className={`${btn.primary} bg-rec px-2`}
+              disabled={busyRecording}
+              onClick={() => void tt.start()}
+            >
+              Record
+            </button>
+          )}
           <button
             className={`${btn.secondary} px-2`}
             disabled={busyRecording}
@@ -477,8 +509,8 @@ export function ReviewerApp(p: Props) {
           aria-label="Comment"
         >
           <p className="text-xs text-muted">
-            Page {composer.anchor.page}
-            {quoteOf(composer.anchor) ? ` · “${quoteOf(composer.anchor)!.exact.slice(0, 60)}”` : ''}
+            {anchorLabel(composer.anchor)}
+            {quoteOf(composer.anchor) ? ` · “${quoteOf(composer.anchor)!.slice(0, 60)}”` : ''}
           </p>
           <label htmlFor="composer" className="sr-only">
             Your comment
