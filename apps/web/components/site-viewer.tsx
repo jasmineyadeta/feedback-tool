@@ -34,6 +34,9 @@ export function SiteViewer(p: {
   const latest = useRef(p);
   latest.current = p;
   const pendingFocus = useRef<SiteFocus | null>(null);
+  /** Overlay eids restart on every page load; prefix them so two pages never share an eid. */
+  const loadSeq = useRef(0);
+  const ns = (eid: string) => `${loadSeq.current}.${eid}`.slice(0, 40);
 
   const send = (m: ToOverlay) =>
     frame.current?.contentWindow?.postMessage({ ft: 1, ...m }, p.proxyOrigin);
@@ -58,6 +61,8 @@ export function SiteViewer(p: {
       const cur = latest.current;
       switch (m.type) {
         case 'overlay:ready':
+          loadSeq.current++;
+        // falls through
         case 'nav':
           setPath(m.pagePath);
           setExternal(null);
@@ -68,10 +73,13 @@ export function SiteViewer(p: {
           if (m.anchor.kind === 'dom' || m.anchor.kind === 'viewport') cur.onPick(m.anchor);
           break;
         case 'tap':
-          cur.onTap?.(m.tap);
+          cur.onTap?.({ ...m.tap, eid: m.tap.eid && ns(m.tap.eid) });
           break;
         case 'timeline':
-          cur.onSnapshot?.(m.snapshot);
+          cur.onSnapshot?.({
+            ...m.snapshot,
+            elements: m.snapshot.elements.map((el) => ({ ...el, eid: ns(el.eid) })),
+          });
           break;
         case 'anchor:located':
           cur.onLocated?.(m.found);

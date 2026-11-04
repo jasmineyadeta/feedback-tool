@@ -69,7 +69,6 @@ export function ReviewerApp(p: Props) {
   const [coach, setCoach] = useState(false);
   const [focus, setFocus] = useState<SiteFocus | null>(null);
   const art = p.artifact;
-  const canRecord = art.kind === 'pdf'; // website talk-through: next slice
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inflight = useRef<Promise<boolean> | null>(null);
   const readOnly = !!submittedAt;
@@ -187,6 +186,7 @@ export function ReviewerApp(p: Props) {
     openRecordings: readOnly ? [] : p.openRecordings,
     knownClientIds: () =>
       new Set([...Object.keys(ref.current.comments), ...Object.keys(ref.current.queue)]),
+    external: art.kind === 'site',
   });
   const recording = tt.phase === 'recording';
   const reanchoring = !!tt.reanchor && !tt.reanchor.anchor;
@@ -272,15 +272,13 @@ export function ReviewerApp(p: Props) {
       </span>
       {!readOnly && (
         <div className="hidden gap-2 md:flex">
-          {canRecord && (
-            <button
-              className={`${btn.primary} bg-rec`}
-              disabled={busyRecording}
-              onClick={() => void tt.start()}
-            >
-              Record
-            </button>
-          )}
+          <button
+            className={`${btn.primary} bg-rec`}
+            disabled={busyRecording}
+            onClick={() => void tt.start()}
+          >
+            Record
+          </button>
           <button
             className={btn.secondary}
             disabled={busyRecording}
@@ -345,9 +343,20 @@ export function ReviewerApp(p: Props) {
               enterUrl={art.enterUrl}
               proxyOrigin={art.proxyOrigin}
               markers={siteMarkers}
-              mode={picking ? 'pick' : 'browse'}
+              mode={
+                recording
+                  ? tt.paused
+                    ? 'browse' // paused: the site works normally (menus, buttons)
+                    : 'record'
+                  : picking || reanchoring
+                    ? 'pick'
+                    : 'browse'
+              }
               focus={focus}
+              onTap={(t) => tt.tap(t.fullAnchor, t.eid)}
+              onSnapshot={tt.pushSnapshot}
               onPick={(anchor) => {
+                if (reanchoring) return tt.setReanchor({ clientId: tt.reanchor!.clientId, anchor });
                 setPicking(false);
                 setComposer({ clientId: null, anchor, text: '' });
               }}
@@ -439,17 +448,15 @@ export function ReviewerApp(p: Props) {
       {/* Mobile action bar */}
       {!readOnly && (
         <nav
-          className={`${recording ? 'hidden' : 'grid'} shrink-0 ${canRecord ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden`}
+          className={`${recording ? 'hidden' : 'grid'} shrink-0 grid-cols-4 gap-1.5 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden`}
         >
-          {canRecord && (
-            <button
-              className={`${btn.primary} bg-rec px-2`}
-              disabled={busyRecording}
-              onClick={() => void tt.start()}
-            >
-              Record
-            </button>
-          )}
+          <button
+            className={`${btn.primary} bg-rec px-2`}
+            disabled={busyRecording}
+            onClick={() => void tt.start()}
+          >
+            Record
+          </button>
           <button
             className={`${btn.secondary} px-2`}
             disabled={busyRecording}

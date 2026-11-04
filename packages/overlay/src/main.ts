@@ -137,9 +137,18 @@ const SUPPRESS = [
   'auxclick',
   'contextmenu',
 ];
+/** While recording, same-site links still navigate (SPEC §3.2 step 4): they're how reviewers move between pages. */
+function isSiteLink(t: EventTarget | null): boolean {
+  const a = (t as Element | null)?.closest?.('a[href]');
+  if (!a || a.hasAttribute('data-ft-external')) return false;
+  const href = a.getAttribute('href') ?? '';
+  return !href.startsWith('#') && !/^(javascript|mailto|tel):/i.test(href);
+}
+
 function suppress(e: Event) {
   if (mode === 'browse') return;
   if ((e.target as Element | null)?.closest?.('#__ft_root')) return;
+  if (mode === 'record' && isSiteLink(e.target)) return;
   e.preventDefault();
   e.stopPropagation();
   e.stopImmediatePropagation();

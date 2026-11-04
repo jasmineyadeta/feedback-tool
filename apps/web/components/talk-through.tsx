@@ -4,13 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import type {
   CommentDraft,
-  PdfAnchor,
+  Anchor,
   ProposedComment,
   RecordingStatus,
   TimelineSnapshot,
   TimelineTap,
 } from '@ft/shared';
 import { btn } from './ui';
+import { anchorLabel } from '@/lib/artifact';
 import { Recorder, requestMic } from '@/lib/client/recorder';
 import { snapshotPdf } from '@/lib/client/pdf-timeline';
 import {
@@ -45,6 +46,8 @@ export function useTalkThrough(p: {
   inviteId: string;
   openRecordings: string[];
   knownClientIds: () => Set<string>;
+  /** Website: snapshots and taps arrive from the overlay (pushSnapshot/tap) instead of DOM polling. */
+  external?: boolean;
 }) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -55,7 +58,7 @@ export function useTalkThrough(p: {
     null,
   );
   /** Preview "Re-anchor": the sheet hides, the reviewer taps the PDF, the new anchor comes back. */
-  const [reanchor, setReanchor] = useState<{ clientId: string; anchor?: PdfAnchor } | null>(null);
+  const [reanchor, setReanchor] = useState<{ clientId: string; anchor?: Anchor } | null>(null);
   const rec = useRef<Recorder | null>(null);
   const snaps = useRef<TimelineSnapshot[]>([]);
   const tapsRef = useRef<TimelineTap[]>([]);
@@ -65,10 +68,18 @@ export function useTalkThrough(p: {
   const memory = useRef(new Map<string, StoredRecording>());
 
   const snap = useCallback(() => {
+    if (p.external) return;
     const el = document.querySelector<HTMLElement>('[data-testid="pdf-scroller"]');
     if (!el || !rec.current || rec.current.paused) return;
     const s = snapshotPdf(el, rec.current.clock());
     if (s && snaps.current.length < 1200) snaps.current.push(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Website snapshot from the overlay, stamped on our clock (frames have their own clocks). */
+  const pushSnapshot = useCallback((s: TimelineSnapshot) => {
+    if (!rec.current || rec.current.paused || snaps.current.length >= 1200) return;
+    snaps.current.push({ ...s, t: rec.current.clock() });
   }, []);
 
   const poll = useCallback(
@@ -301,9 +312,9 @@ export function useTalkThrough(p: {
     setPaused(r.paused);
   }
 
-  function tap(anchor: PdfAnchor) {
+  function tap(anchor: Anchor, eid: string | null = null) {
     if (!rec.current || rec.current.paused) return;
-    const t: TimelineTap = { t: rec.current.clock(), eid: null, fullAnchor: anchor };
+    const t: TimelineTap = { t: rec.current.clock(), eid, fullAnchor: anchor };
     if (tapsRef.current.length >= 200) return;
     tapsRef.current = [...tapsRef.current, t];
     setTaps(tapsRef.current);
@@ -327,6 +338,7 @@ export function useTalkThrough(p: {
     cancel,
     togglePause,
     tap,
+    pushSnapshot,
   };
 }
 
@@ -481,8 +493,7 @@ export function PreviewSheet({
         .map((c, i) => ({
           clientId: c.clientId,
           text: c.text.trim(),
-          anchor:
-            c.anchor && (c.anchor.kind === 'pdf' || c.anchor.kind === 'pdf-page') ? c.anchor : null,
+          anchor: c.anchor,
           general: false,
           source: c.source,
           sortKey: base + i,
@@ -516,7 +527,7 @@ export function PreviewSheet({
                   <span className="rounded-full bg-paper px-2 py-0.5 font-medium text-ink ring-1 ring-line">
                     {SOURCE_LABEL[c.source] ?? c.source}
                   </span>
-                  {c.anchor && 'page' in c.anchor && <span>Page {c.anchor.page}</span>}
+                  {c.anchor && <span>{anchorLabel(c.anchor)}</span>}
                   <button
                     className="ml-auto underline"
                     onClick={() => tt.setReanchor({ clientId: c.clientId })}
