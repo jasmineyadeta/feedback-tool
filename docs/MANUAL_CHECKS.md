@@ -11,3 +11,12 @@ Things automation can't cover (real devices, real mic). Each has steps and what 
   - Good: the comment is still there after reopening and the status changes to "All changes saved" once online.
 - [ ] Submit with name + email.
   - Good: thank-you banner; the owner email arrives in the local inbox (http://localhost:54324).
+
+## M3 — Talk-through on real devices
+- [ ] With `pnpm dev:phone` running, open a PDF reviewer link on the **iPhone (Safari)**. Tap **Record**, read the disclosure, **Start recording**, allow the mic.
+  - Good: red dot + timer; Pause/Resume work; tapping the PDF shows numbered "Tap" markers.
+- [ ] Say two sentences, tapping a heading before the second, then **Stop**.
+  - Good: within ~10 s "Here's what we heard" shows two comments; the second is "Tapped" with your words (not reworded).
+- [ ] Repeat on the **iPad**.
+- [ ] Deny the mic once (Settings → Safari → Microphone → Deny), tap Record.
+  - Good: "Your microphone is blocked…" with **Type a comment**.

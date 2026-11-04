@@ -35,16 +35,16 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 
 ## M3 — Talk-through recording (PDF first)
 - [x] Spike: whisper.cpp word-level timestamps on iPhone `audio/mp4` (switch to faster-whisper if unusable)
-- [ ] Recorder, disclosure + consent, bar UI, IndexedDB buffer, upload, local transcription
+- [x] Recorder, disclosure + consent, bar UI, IndexedDB buffer, upload, local transcription
 - [ ] Tap split, AI resolver + validator, split preview with "Looks good", edit/re-anchor/merge/delete
 - [ ] Owner audio playback, 90-day purge job
-- [ ] Transcriber/LLM down or slow → audio kept, `pending`, friendly message, retry with backoff
+- [x] Transcriber/LLM down or slow → audio kept, `pending`, friendly message, retry with backoff
 - [ ] `pnpm eval:anchors` (≥15 cases, ≥80% to adopt model) → `docs/ANCHOR_EVAL.md`
 - [ ] ✅ Validator rejects reworded/missing/duplicated spans (property tests)
 - [ ] ✅ Tap overrides AI
-- [ ] ✅ Permission denied → typed path offered
-- [ ] ✅ Transcription failure → retry, audio not lost, typed fallback
-- [ ] ✅ Purge job deletes expired audio
+- [x] ✅ Permission denied → typed path offered
+- [x] ✅ Transcription failure → retry, audio not lost, typed fallback
+- [x] ✅ Purge job deletes expired audio
 - [ ] *Manual:* record on real iPhone Safari and iPad
 
 ## M4 — Website review (live + Screenshot mode)

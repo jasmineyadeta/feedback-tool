@@ -87,3 +87,18 @@ describe('sortKey', () => {
     expect(CommentDraft.safeParse(c('stamp1', 'x', Date.now())).success).toBe(true);
   });
 });
+
+describe('recording buffer', () => {
+  it('keeps audio blobs per invite until deleted', async () => {
+    const { putRecording, listRecordings, deleteRecording } = await import('@/lib/client/drafts');
+    const bytes = new Uint8Array([1, 2, 3]).buffer;
+    const meta = { clientId: 'rec001', mimeType: 'audio/webm', durationMs: 1000, timeline: {} };
+    expect(
+      await putRecording({ clientId: 'rec001', inviteId: 'inv-a', bytes, meta, savedAt: 1 }),
+    ).toBe(true);
+    await putRecording({ clientId: 'rec002', inviteId: 'inv-b', bytes, meta, savedAt: 2 });
+    expect((await listRecordings('inv-a')).map((r) => r.clientId)).toEqual(['rec001']);
+    await deleteRecording('rec001');
+    expect(await listRecordings('inv-a')).toEqual([]);
+  });
+});

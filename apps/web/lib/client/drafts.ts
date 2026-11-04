@@ -71,11 +71,16 @@ export function newClientId(): string {
 // ---------------------------------------------------------------- IndexedDB persistence
 const DB = 'ft-drafts';
 const STORE = 'invites';
+const REC_STORE = 'recordings';
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    const req = indexedDB.open(DB, 2);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+      if (!db.objectStoreNames.contains(REC_STORE)) db.createObjectStore(REC_STORE);
+    };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
@@ -115,5 +120,57 @@ export async function clearLocal(inviteId: string): Promise<void> {
     db.transaction(STORE, 'readwrite').objectStore(STORE).delete(inviteId);
   } catch {
     /* nothing to clear */
+  }
+}
+
+// ---------------------------------------------------------------- recordings awaiting upload ACK
+export type StoredRecording = {
+  clientId: string;
+  inviteId: string;
+  /** Raw bytes, not a Blob: Safari can't keep Blobs in IndexedDB in private browsing. */
+  bytes: ArrayBuffer;
+  meta: { clientId: string; mimeType: string; durationMs: number; timeline: unknown };
+  savedAt: number;
+};
+
+async function tx<T>(
+  mode: IDBTransactionMode,
+  fn: (s: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const req = fn(db.transaction(REC_STORE, mode).objectStore(REC_STORE));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/** Saved before upload starts; removed only after the server ACKs (CLAUDE.md non-negotiable). */
+export async function putRecording(r: StoredRecording): Promise<boolean> {
+  try {
+    await tx('readwrite', (s) => s.put(r, r.clientId));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function listRecordings(inviteId: string): Promise<StoredRecording[]> {
+  try {
+    const all = await tx<StoredRecording[]>(
+      'readonly',
+      (s) => s.getAll() as IDBRequest<StoredRecording[]>,
+    );
+    return all.filter((r) => r.inviteId === inviteId).sort((a, b) => a.savedAt - b.savedAt);
+  } catch {
+    return [];
+  }
+}
+
+export async function deleteRecording(clientId: string): Promise<void> {
+  try {
+    await tx('readwrite', (s) => s.delete(clientId));
+  } catch {
+    /* already gone */
   }
 }

@@ -6,6 +6,13 @@ import { GENERAL_NOTE_ID, LIMITS, type CommentDraft, type PdfAnchor } from '@ft/
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
 import { btn } from './ui';
 import {
+  ConsentSheet,
+  PreviewSheet,
+  RecordingBar,
+  TalkNotice,
+  useTalkThrough,
+} from './talk-through';
+import {
   ack,
   clearLocal,
   loadLocal,
@@ -29,6 +36,7 @@ type Props = {
   nameHint: string;
   submittedAt: string | null;
   initialComments: CommentDraft[];
+  openRecordings: string[];
 };
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error';
@@ -166,6 +174,20 @@ export function ReviewerApp(p: Props) {
       : [],
   );
   const pending = Object.keys(state.queue).length;
+  const tt = useTalkThrough({
+    token: p.token,
+    inviteId: p.inviteId,
+    openRecordings: readOnly ? [] : p.openRecordings,
+    knownClientIds: () =>
+      new Set([...Object.keys(ref.current.comments), ...Object.keys(ref.current.queue)]),
+  });
+  const recording = tt.phase === 'recording';
+  const tapMarkers: PdfMarker[] = tt.taps.flatMap((t, i) =>
+    t.fullAnchor.kind === 'pdf'
+      ? [{ id: `tap-${i}`, n: i + 1, anchor: t.fullAnchor, active: true, label: `Tap ${i + 1}` }]
+      : [],
+  );
+  const busyRecording = recording || tt.phase === 'uploading';
 
   function dismissCoach() {
     setCoach(false);
@@ -234,10 +256,25 @@ export function ReviewerApp(p: Props) {
       </span>
       {!readOnly && (
         <div className="hidden gap-2 md:flex">
-          <button className={btn.secondary} onClick={() => setPicking((v) => !v)}>
+          <button
+            className={`${btn.primary} bg-rec`}
+            disabled={busyRecording}
+            onClick={() => void tt.start()}
+          >
+            Record
+          </button>
+          <button
+            className={btn.secondary}
+            disabled={busyRecording}
+            onClick={() => setPicking((v) => !v)}
+          >
             {picking ? 'Cancel' : 'Add comment'}
           </button>
-          <button className={btn.primary} onClick={() => setSubmitOpen(true)}>
+          <button
+            className={btn.secondary}
+            disabled={busyRecording}
+            onClick={() => setSubmitOpen(true)}
+          >
             Submit
           </button>
         </div>
@@ -259,7 +296,15 @@ export function ReviewerApp(p: Props) {
           close this page.
         </p>
       )}
-      {picking && (
+      <RecordingBar tt={tt} />
+      <TalkNotice
+        tt={tt}
+        onType={() => {
+          tt.setNotice(null);
+          setPicking(true);
+        }}
+      />
+      {picking && !recording && (
         <p className="shrink-0 bg-accent px-3 py-2 text-center text-sm text-white" role="status">
           Tap the spot your comment is about.
         </p>
@@ -269,9 +314,10 @@ export function ReviewerApp(p: Props) {
           <PdfViewer
             url={p.pdfUrl}
             pageCount={p.pageCount}
-            markers={markers}
-            picking={picking}
+            markers={recording ? [...markers, ...tapMarkers] : markers}
+            picking={picking || recording}
             onPick={(anchor) => {
+              if (recording) return tt.tap(anchor);
               setPicking(false);
               setComposer({ clientId: null, anchor, text: '' });
             }}
@@ -348,14 +394,31 @@ export function ReviewerApp(p: Props) {
 
       {/* Mobile action bar */}
       {!readOnly && (
-        <nav className="grid shrink-0 grid-cols-3 gap-2 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
-          <button className={btn.secondary} onClick={() => setPicking((v) => !v)}>
+        <nav
+          className={`${recording ? 'hidden' : 'grid'} shrink-0 grid-cols-4 gap-1.5 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden`}
+        >
+          <button
+            className={`${btn.primary} bg-rec px-2`}
+            disabled={busyRecording}
+            onClick={() => void tt.start()}
+          >
+            Record
+          </button>
+          <button
+            className={`${btn.secondary} px-2`}
+            disabled={busyRecording}
+            onClick={() => setPicking((v) => !v)}
+          >
             {picking ? 'Cancel' : 'Add comment'}
           </button>
-          <button className={btn.secondary} onClick={() => setListOpen(true)}>
+          <button className={`${btn.secondary} px-2`} onClick={() => setListOpen(true)}>
             Comments ({list.length})
           </button>
-          <button className={btn.primary} onClick={() => setSubmitOpen(true)}>
+          <button
+            className={`${btn.secondary} px-2`}
+            disabled={busyRecording}
+            onClick={() => setSubmitOpen(true)}
+          >
             Submit
           </button>
         </nav>
@@ -384,9 +447,9 @@ export function ReviewerApp(p: Props) {
 
       {coach && ready && (
         <div className="fixed inset-x-3 top-16 z-20 mx-auto max-w-sm rounded-lg bg-ink p-4 text-sm text-white shadow-xl md:right-6 md:left-auto">
-          <p>Tap “Add comment”, then tap the spot you mean.</p>
-          <p>Or select some text to comment on it.</p>
-          <p>Everything saves as you go.</p>
+          <p>Hit record and talk.</p>
+          <p>Tap things to point at them.</p>
+          <p>That’s it.</p>
           <button className="mt-3 text-sm font-medium underline" onClick={dismissCoach}>
             Got it
           </button>
@@ -427,6 +490,16 @@ export function ReviewerApp(p: Props) {
         </div>
       )}
 
+      <ConsentSheet tt={tt} />
+      <PreviewSheet
+        tt={tt}
+        onAccept={(keep, discard) => {
+          let next = ref.current;
+          for (const c of keep) next = upsert(next, c);
+          for (const id of discard) next = remove(next, id);
+          commit(next);
+        }}
+      />
       <SubmitSheet
         open={submitOpen}
         onOpenChange={setSubmitOpen}

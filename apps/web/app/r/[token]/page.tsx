@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { listInviteComments, resolveInvite, reviewerPdfUrl } from '@/lib/server/reviewer';
+import { openRecordings } from '@/lib/server/recordings';
 import { ReviewerApp } from '@/components/reviewer-app';
 
 export const dynamic = 'force-dynamic';
@@ -14,9 +15,10 @@ export default async function ReviewerPage({ params }: { params: Promise<{ token
   const { token } = await params;
   const ctx = await resolveInvite(token);
   if (!ctx) notFound();
-  const [comments, pdfUrl] = await Promise.all([
+  const [comments, pdfUrl, open] = await Promise.all([
     listInviteComments(ctx.invite.id),
     reviewerPdfUrl(ctx),
+    ctx.invite.status === 'submitted' ? Promise.resolve([]) : openRecordings(ctx),
   ]);
   if (!pdfUrl) notFound();
   return (
@@ -30,6 +32,7 @@ export default async function ReviewerPage({ params }: { params: Promise<{ token
       nameHint={ctx.invite.name_hint}
       submittedAt={ctx.invite.status === 'submitted' ? ctx.invite.submitted_at : null}
       initialComments={comments.map(({ updatedAt: _u, ...c }) => c)}
+      openRecordings={open}
     />
   );
 }

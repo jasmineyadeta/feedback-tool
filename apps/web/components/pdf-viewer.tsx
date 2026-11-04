@@ -8,7 +8,13 @@ import type { PdfAnchor } from '@ft/shared';
  * pdf.js viewer (SPEC §4.2): lazy page rendering, zoom, selectable text layer, numbered markers.
  * In pick mode a tap returns a pin anchor; outside pick mode a text selection returns a quote anchor.
  */
-export type PdfMarker = { id: string; n: number; anchor: PdfAnchor; active?: boolean };
+export type PdfMarker = {
+  id: string;
+  n: number;
+  anchor: PdfAnchor;
+  active?: boolean;
+  label?: string;
+};
 
 type Props = {
   url: string | (() => Promise<string>);
@@ -254,6 +260,7 @@ function PdfPage(
     <div
       ref={box}
       data-page={n}
+      data-pdf-box={vp ? vp.viewBox.join(',') : undefined}
       className={`relative mx-auto mb-4 bg-white shadow-sm ${picking ? 'cursor-crosshair' : ''}`}
       style={
         {
@@ -303,7 +310,7 @@ function PdfPage(
                 id={`marker-${m.id}`}
                 data-marker
                 type="button"
-                aria-label={`Comment ${m.n}`}
+                aria-label={m.label ?? `Comment ${m.n}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onMarker?.(m.id);
