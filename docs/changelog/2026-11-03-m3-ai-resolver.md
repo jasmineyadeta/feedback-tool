@@ -17,3 +17,4 @@
 ## Known limitations
 - `pnpm eval:anchors` (≥15 cases, ≥80% to adopt the model) is the next slice; until then `qwen3:14b` is provisional (D15).
 - Preview re-anchor and merge still to come.
+- `e2e/talk-through.spec.ts` now expects the untapped sentence to be **Auto-placed** (the mock resolver matches it to the visible line containing "resume") with its own marker, and `anchor_source = 'ai'` — previously "On screen" when there was no AI step.

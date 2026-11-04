@@ -121,7 +121,8 @@ test('record, tap, stop → split preview → Looks good saves the comments', as
   await expect(preview).toBeVisible({ timeout: 15000 });
   const cards = preview.getByTestId('proposed-comment');
   await expect(cards).toHaveCount(2);
-  await expect(cards.nth(0)).toContainText('On screen');
+  // The (mock) AI places the untapped sentence on the visible line sharing its words ("resume").
+  await expect(cards.nth(0)).toContainText('Auto-placed');
   await expect(cards.nth(0).getByRole('textbox')).toHaveValue(
     'Overall this resume reads really clearly',
   );
@@ -132,7 +133,7 @@ test('record, tap, stop → split preview → Looks good saves the comments', as
   const saved = page.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
   await preview.getByRole('button', { name: 'Looks good' }).click();
   await saved;
-  await expect(page.getByRole('button', { name: /^Comment \d$/ })).toHaveCount(1); // the tapped one
+  await expect(page.getByRole('button', { name: /^Comment \d$/ })).toHaveCount(2); // AI + tap
 
   // Consent was recorded server-side; drafts became saved comments with their source.
   const { data: inv } = await admin()
@@ -149,7 +150,7 @@ test('record, tap, stop → split preview → Looks good saves the comments', as
   expect(rows).toEqual([
     {
       state: 'saved',
-      anchor_source: 'viewport',
+      anchor_source: 'ai',
       transcript_original: 'overall this resume reads really clearly',
     },
     {
@@ -161,7 +162,7 @@ test('record, tap, stop → split preview → Looks good saves the comments', as
 
   await page.reload();
   await expect(page.getByRole('dialog', { name: 'Here’s what we heard' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Comment \d$/ })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /^Comment \d$/ })).toHaveCount(2);
   await s.owner.context().close();
 });
 
