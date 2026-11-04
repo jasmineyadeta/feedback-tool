@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
-import type { Anchor } from '@ft/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Anchor, OwnerMoveRequest } from '@ft/shared';
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
 import { SiteViewer, type LocateMethod, type SiteFocus, type SiteMarker } from './site-viewer';
 import { ScreenshotViewer, type ShotMarker } from './screenshot-viewer';
@@ -32,6 +32,8 @@ const SOURCE: Record<string, string> = {
   manual: 'Typed',
   owner_moved: 'Moved by you',
 };
+/** SPEC §3.3: only auto-placed comments can be moved; the reviewer's own taps stay put. */
+const MOVABLE = new Set(['ai', 'viewport', 'owner_moved']);
 const norm = (t: string) => t.replace(/\s+/g, ' ').trim().toLowerCase();
 type Reviewer = { id: string; name: string; submitted_at: string };
 
@@ -49,6 +51,8 @@ export function FeedbackView(p: {
   const [error, setError] = useState<string | null>(null);
   const [focus, setFocus] = useState<SiteFocus | null>(null);
   const [located, setLocated] = useState<{ id: string; method: LocateMethod | null } | null>(null);
+  const [moving, setMoving] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const art = p.artifact;
   const names = useMemo(() => new Map(p.reviewers.map((r) => [r.id, r.name])), [p.reviewers]);
 
@@ -166,6 +170,46 @@ export function FeedbackView(p: {
     set(((await res.json()) as { addressedAt: string | null }).addressedAt);
   }
 
+  useEffect(() => {
+    if (!moving) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setMoving(null);
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [moving]);
+
+  function startMove(c: Comment) {
+    setError(null);
+    setActive(c.id);
+    setSheetOpen(false);
+    setLocated(null);
+    setMoving(c.id);
+  }
+
+  async function move(anchor: OwnerMoveRequest['anchor']) {
+    const id = moving;
+    if (!id || saving) return;
+    setSaving(true);
+    const res = await fetch(`/api/reviews/${p.reviewId}/comments/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ anchor }),
+    }).catch(() => null);
+    setSaving(false);
+    setMoving(null);
+    if (!res?.ok) {
+      const body = (await res?.json().catch(() => null)) as { error?: { message: string } } | null;
+      return setError(
+        body?.error?.message ?? 'The move didn’t save. Check your connection and try again.',
+      );
+    }
+    const saved = (await res.json()) as { anchor: Anchor };
+    setComments((l) =>
+      l.map((x) =>
+        x.id === id ? { ...x, anchor: saved.anchor, anchor_source: 'owner_moved' } : x,
+      ),
+    );
+  }
+
   const card = (c: Comment) => (
     <li
       key={c.id}
@@ -213,6 +257,15 @@ export function FeedbackView(p: {
           <button className="font-medium underline" onClick={() => void play(c)}>
             {playing === c.id ? 'Stop' : 'Play'}
             <span className="sr-only"> recording for this comment</span>
+          </button>
+        )}
+        {c.anchor && !c.general && c.anchor_source && MOVABLE.has(c.anchor_source) && (
+          <button
+            className="font-medium underline"
+            onClick={() => startMove(c)}
+            aria-label={`Move comment ${number.get(c.id) ?? ''}`.trim()}
+          >
+            Move
           </button>
         )}
         <label className="inline-flex items-center gap-2">
@@ -275,13 +328,28 @@ export function FeedbackView(p: {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1">
+          {moving && (
+            <div
+              role="status"
+              className="absolute inset-x-2 top-2 z-20 flex items-center justify-between gap-3 rounded-lg bg-ink px-3 py-2 text-sm text-white shadow-lg"
+            >
+              <span>
+                {saving ? 'Saving…' : `Tap the new spot for comment ${number.get(moving) ?? ''}.`}
+                <span className="sr-only"> Press Escape to cancel.</span>
+              </span>
+              <button className="font-medium underline" onClick={() => setMoving(null)}>
+                Cancel
+              </button>
+            </div>
+          )}
           {art.kind === 'screenshot' ? (
             <ScreenshotViewer
               audience="owner"
               screens={art.screens}
               pagePath={art.pagePath}
               markers={shotMarkers}
-              picking={false}
+              picking={!!moving}
+              onPick={(a) => void move(a)}
               onMarker={(id) => {
                 setActive(id);
                 setSheetOpen(true);
@@ -293,9 +361,9 @@ export function FeedbackView(p: {
                 enterUrl={art.enterUrl}
                 proxyOrigin={art.proxyOrigin}
                 markers={siteMarkers}
-                mode="browse"
+                mode={moving ? 'pick' : 'browse'}
                 focus={focus}
-                onPick={() => undefined}
+                onPick={(a) => a.kind === 'dom' && void move(a)}
                 onLocated={(method) => setLocated((l) => l && { ...l, method })}
               />
               {located && (
@@ -312,8 +380,8 @@ export function FeedbackView(p: {
               url={art.url}
               pageCount={art.pageCount}
               markers={markers}
-              picking={false}
-              onPick={() => undefined}
+              picking={!!moving}
+              onPick={(a) => void move(a)}
               onMarker={(id) => {
                 setActive(id);
                 setSheetOpen(true);

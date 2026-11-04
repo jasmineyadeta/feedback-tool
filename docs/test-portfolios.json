@@ -15,6 +15,10 @@
     { "url": "https://www.thaisafernandes.com/", "role": "pm", "platform_guess": "unknown", "source": "careerfoundry PM portfolio guide" },
     { "url": "https://www.justinhinh.com/", "role": "pm", "platform_guess": "unknown", "source": "careerfoundry PM portfolio guide" },
     { "url": "https://danshettysite.webflow.io/", "role": "pm", "platform_guess": "webflow", "source": "careerfoundry PM portfolio guide" },
-    { "url": "https://omololaodunowo.netlify.app/", "role": "pm", "platform_guess": "static-netlify", "source": "careerfoundry PM portfolio guide" }
+    { "url": "https://omololaodunowo.netlify.app/", "role": "pm", "platform_guess": "static-netlify", "source": "careerfoundry PM portfolio guide" },
+    { "url": "https://www.samdickie.me/", "role": "student", "platform_guess": "notion", "source": "Jas (D28), 2026-11-04" },
+    { "url": "https://www.laurenselley.com/", "role": "student", "platform_guess": "squarespace", "source": "Jas (D28), 2026-11-04" },
+    { "url": "https://www.designalily.com/about", "role": "student", "platform_guess": "webflow", "source": "Jas (D28), 2026-11-04" },
+    { "url": "https://www.ktestep.com/", "role": "student", "platform_guess": "wix", "source": "Jas (D28), 2026-11-04" }
   ]
 }

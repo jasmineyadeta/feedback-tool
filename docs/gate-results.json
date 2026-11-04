@@ -1,8 +1,8 @@
 {
-  "date": "2026-11-03",
-  "rate": 0.8,
+  "date": "2026-11-04",
+  "rate": 0.7368421052631579,
   "framer": 3,
-  "webflow": 3,
+  "webflow": 2,
   "gatePass": true,
   "rows": [
     {
@@ -17,7 +17,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 769,
+        "ms": 661,
         "platform": "framer"
       },
       "chromium": {
@@ -29,7 +29,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12572
+        "ms": 13177
       },
       "webkit-iphone": {
         "pass": true,
@@ -40,7 +40,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 13117
+        "ms": 13041
       }
     },
     {
@@ -55,7 +55,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 540,
+        "ms": 524,
         "platform": "framer"
       },
       "chromium": {
@@ -67,7 +67,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12671
+        "ms": 12686
       },
       "webkit-iphone": {
         "pass": true,
@@ -78,7 +78,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12867
+        "ms": 13117
       }
     },
     {
@@ -93,7 +93,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 1040,
+        "ms": 1333,
         "platform": "framer"
       },
       "chromium": {
@@ -105,7 +105,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12620
+        "ms": 12747
       },
       "webkit-iphone": {
         "pass": true,
@@ -116,7 +116,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12935
+        "ms": 12664
       }
     },
     {
@@ -131,7 +131,7 @@
         "xfo": "SAMEORIGIN",
         "csp": true,
         "redirect": null,
-        "ms": 1042,
+        "ms": 937,
         "platform": "webflow"
       },
       "chromium": {
@@ -143,7 +143,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 20109
+        "ms": 20162
       },
       "webkit-iphone": {
         "pass": false,
@@ -154,7 +154,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 19668
+        "ms": 19897
       }
     },
     {
@@ -169,7 +169,7 @@
         "xfo": "SAMEORIGIN",
         "csp": true,
         "redirect": null,
-        "ms": 362,
+        "ms": 360,
         "platform": "webflow"
       },
       "chromium": {
@@ -181,18 +181,18 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12811
+        "ms": 12710
       },
       "webkit-iphone": {
-        "pass": true,
-        "reason": null,
+        "pass": false,
+        "reason": "failed: tap, reanchor",
         "steps": {
           "render": true,
           "interaction": true,
-          "tap": true,
-          "reanchor": true
+          "tap": false,
+          "reanchor": false
         },
-        "ms": 12660
+        "ms": 17720
       }
     },
     {
@@ -207,7 +207,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 657,
+        "ms": 624,
         "platform": "squarespace"
       },
       "chromium": {
@@ -219,7 +219,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 15483
+        "ms": 14727
       },
       "webkit-iphone": {
         "pass": true,
@@ -230,7 +230,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 15848
+        "ms": 13825
       }
     },
     {
@@ -245,7 +245,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 371,
+        "ms": 475,
         "platform": "wix"
       },
       "chromium": {
@@ -257,7 +257,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12572
+        "ms": 12463
       },
       "webkit-iphone": {
         "pass": true,
@@ -268,7 +268,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12712
+        "ms": 12592
       }
     },
     {
@@ -283,7 +283,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 346,
+        "ms": 408,
         "platform": "next"
       },
       "chromium": {
@@ -295,7 +295,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 15326
+        "ms": 15418
       },
       "webkit-iphone": {
         "pass": false,
@@ -306,7 +306,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 14467
+        "ms": 14578
       }
     },
     {
@@ -321,30 +321,30 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 246,
+        "ms": 217,
         "platform": "next"
       },
       "chromium": {
-        "pass": true,
-        "reason": null,
+        "pass": false,
+        "reason": "failed: tap, reanchor",
         "steps": {
           "render": true,
           "interaction": true,
-          "tap": true,
-          "reanchor": true
+          "tap": false,
+          "reanchor": false
         },
-        "ms": 12512
+        "ms": 17290
       },
       "webkit-iphone": {
-        "pass": true,
-        "reason": null,
+        "pass": false,
+        "reason": "failed: tap, reanchor",
         "steps": {
           "render": true,
           "interaction": true,
-          "tap": true,
-          "reanchor": true
+          "tap": false,
+          "reanchor": false
         },
-        "ms": 12354
+        "ms": 17582
       }
     },
     {
@@ -359,30 +359,30 @@
         "xfo": "SAMEORIGIN",
         "csp": false,
         "redirect": null,
-        "ms": 406,
+        "ms": 405,
         "platform": "next"
       },
       "chromium": {
-        "pass": true,
-        "reason": null,
+        "pass": false,
+        "reason": "failed: interaction",
         "steps": {
           "render": true,
-          "interaction": true,
+          "interaction": false,
           "tap": true,
           "reanchor": true
         },
-        "ms": 12550
+        "ms": 14866
       },
       "webkit-iphone": {
-        "pass": true,
-        "reason": null,
+        "pass": false,
+        "reason": "failed: interaction",
         "steps": {
           "render": true,
-          "interaction": true,
+          "interaction": false,
           "tap": true,
           "reanchor": true
         },
-        "ms": 12287
+        "ms": 14617
       }
     },
     {
@@ -397,7 +397,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 363,
+        "ms": 372,
         "platform": "next"
       },
       "chromium": {
@@ -409,7 +409,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12779
+        "ms": 12934
       },
       "webkit-iphone": {
         "pass": true,
@@ -420,7 +420,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12553
+        "ms": 12504
       }
     },
     {
@@ -435,19 +435,19 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 391,
+        "ms": 481,
         "platform": "react"
       },
       "chromium": {
-        "pass": false,
-        "reason": "failed: interaction",
+        "pass": true,
+        "reason": null,
         "steps": {
           "render": true,
-          "interaction": false,
+          "interaction": true,
           "tap": true,
           "reanchor": true
         },
-        "ms": 9841
+        "ms": 12555
       },
       "webkit-iphone": {
         "pass": true,
@@ -458,7 +458,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12779
+        "ms": 12874
       }
     },
     {
@@ -473,7 +473,7 @@
         "xfo": null,
         "csp": true,
         "redirect": null,
-        "ms": 229,
+        "ms": 250,
         "platform": "webflow"
       },
       "chromium": {
@@ -485,7 +485,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12616
+        "ms": 12898
       },
       "webkit-iphone": {
         "pass": true,
@@ -496,7 +496,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12607
+        "ms": 12716
       }
     },
     {
@@ -511,7 +511,7 @@
         "xfo": null,
         "csp": true,
         "redirect": null,
-        "ms": 206,
+        "ms": 253,
         "platform": "webflow"
       },
       "chromium": {
@@ -523,7 +523,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12281
+        "ms": 12400
       },
       "webkit-iphone": {
         "pass": true,
@@ -534,7 +534,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12191
+        "ms": 12240
       }
     },
     {
@@ -549,7 +549,7 @@
         "xfo": null,
         "csp": false,
         "redirect": null,
-        "ms": 680,
+        "ms": 289,
         "platform": "static"
       },
       "chromium": {
@@ -561,7 +561,7 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12671
+        "ms": 12907
       },
       "webkit-iphone": {
         "pass": true,
@@ -572,7 +572,159 @@
           "tap": true,
           "reanchor": true
         },
-        "ms": 12296
+        "ms": 12385
+      }
+    },
+    {
+      "url": "https://www.samdickie.me/",
+      "guess": "notion",
+      "platform": "static",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": "SAMEORIGIN",
+        "csp": false,
+        "redirect": null,
+        "ms": 267,
+        "platform": "static"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12444
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12201
+      }
+    },
+    {
+      "url": "https://www.laurenselley.com/",
+      "guess": "squarespace",
+      "platform": "squarespace",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 695,
+        "platform": "squarespace"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 14397
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 13799
+      }
+    },
+    {
+      "url": "https://www.designalily.com/about",
+      "guess": "webflow",
+      "platform": "static",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": "ALLOW-FROM https://app.kajabi.com https://app.vibely.io https://communities.kajabi.com https://communities-widget.kajabi.com *.mykajabi.com https://communities.newkajabi-staging.com https://communities-widget.newkajabi-staging.com https://www.designalily.com",
+        "csp": true,
+        "redirect": null,
+        "ms": 755,
+        "platform": "static"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 13350
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12986
+      }
+    },
+    {
+      "url": "https://www.ktestep.com/",
+      "guess": "wix",
+      "platform": "wix",
+      "reachable": true,
+      "health": {
+        "ok": true,
+        "reason": null,
+        "status": 200,
+        "xfo": null,
+        "csp": false,
+        "redirect": null,
+        "ms": 556,
+        "platform": "wix"
+      },
+      "chromium": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 12679
+      },
+      "webkit-iphone": {
+        "pass": true,
+        "reason": null,
+        "steps": {
+          "render": true,
+          "interaction": true,
+          "tap": true,
+          "reanchor": true
+        },
+        "ms": 13061
       }
     }
   ]

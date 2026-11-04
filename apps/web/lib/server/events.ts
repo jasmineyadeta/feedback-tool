@@ -10,7 +10,8 @@ export type EventType =
   | 'submitted'
   | 'owner_viewed_feedback'
   | 'comment_addressed'
-  | 'render_fallback';
+  | 'render_fallback'
+  | 'comment_moved';
 
 /** First-party analytics only (D23). `meta` must never contain content, emails, or URLs beyond eTLD+1. */
 export async function logEvent(

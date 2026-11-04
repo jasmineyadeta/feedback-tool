@@ -84,3 +84,9 @@ export type RecordingStatus = {
   slow: boolean;
   proposed: ProposedComment[];
 };
+
+/** Owner moves an auto-placed comment (SPEC §3.3, `anchor_source = owner_moved`). */
+export const OwnerMoveRequest = z.object({
+  anchor: z.discriminatedUnion('kind', [PdfAnchor, DomAnchor, ScreenshotAnchor]),
+});
+export type OwnerMoveRequest = z.infer<typeof OwnerMoveRequest>;
