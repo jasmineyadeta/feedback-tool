@@ -79,6 +79,7 @@ test('on-screen comments show as numbered bands; clicking a number selects the c
   await expect(site.getByRole('button', { name: 'Comment 1' })).toBeVisible();
   const two = site.getByRole('button', { name: 'Comment 2' });
   await expect(two).toBeAttached();
+  await expect(site.locator('.band')).toHaveCount(0); // just pins until a comment is opened
 
   // The band for comment 2 sits beside the Skills heading (the element that was mid-screen).
   const tops = await site.locator('#skills > h2').evaluate((h) => {
@@ -99,6 +100,9 @@ test('on-screen comments show as numbered bands; clicking a number selects the c
   // (On a phone the marker opened the comment sheet.) Opening an on-screen comment from the list doesn't claim the page changed.
   await card.getByRole('button').first().click();
   await expect(page.getByTestId('locate-status')).toHaveAttribute('data-method', 'cssPath');
+  // The opened comment shows its area as one band, and its own pin is highlighted (not duplicated).
+  await expect(site.locator('.band')).toHaveCount(1);
+  await expect(site.getByRole('button', { name: 'Comment 2' })).toHaveClass(/active/);
   await expect(page.getByText('changed since the review')).toHaveCount(0);
   // Markers stay visible after jumping to a comment.
   await expect(site.getByRole('button', { name: 'Comment 1' })).toBeAttached();

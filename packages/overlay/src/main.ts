@@ -279,10 +279,11 @@ function ui(): ShadowRoot {
     .box{position:absolute;border:2px solid #2f5bd3;border-radius:4px;box-shadow:0 0 0 4px rgba(47,91,211,.18);transition:opacity .4s}
     .pulse{animation:p 1.2s ease-out 2}
     @keyframes p{0%{box-shadow:0 0 0 0 rgba(47,91,211,.6)}100%{box-shadow:0 0 0 14px rgba(47,91,211,0)}}
-    .num{position:absolute;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#2f5bd3;color:#fff;font:600 12px/22px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+    .num{position:absolute;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#2f5bd3;color:#fff;font:600 12px/22px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.45);transition:transform .2s,background .2s}
+    .num.active{background:#1c1f23;transform:scale(1.2)}
     .click{pointer-events:auto;cursor:pointer}
     .click:focus-visible{outline:2px solid #1c1f23;outline-offset:2px}
-    .band{position:absolute;width:6px;border-radius:3px;background:rgba(47,91,211,.5)}
+    .band{position:absolute;width:6px;border-radius:3px;background:rgba(47,91,211,.6);box-shadow:0 0 0 1px rgba(255,255,255,.8)}
     .band.pulse{animation:b 1.2s ease-out 2}
     @keyframes b{0%{box-shadow:0 0 0 0 rgba(47,91,211,.6)}100%{box-shadow:0 0 0 10px rgba(47,91,211,0)}}
     .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#1c1f23;color:#fff;font:14px system-ui,sans-serif;padding:8px 12px;border-radius:6px}`;
@@ -295,6 +296,7 @@ function badge(label: string, x: number, y: number, cls: string, clickable: bool
   num.className = `num ${cls}`;
   num.textContent = label;
   num.setAttribute('aria-label', `Comment ${label}`);
+  num.dataset.label = label;
   num.style.cssText = `left:${x}px;top:${y}px`;
   if (clickable) {
     // Clicking a number on the page selects that comment in the list.
@@ -331,20 +333,29 @@ function viewportArea(a: ViewportAnchor): { y: number; h: number; el: Element | 
   }
   return { y: a.scroll.y, h: Math.min(a.viewport.h, window.innerHeight), el: null };
 }
-/** A band down the right edge beside the area, with its number. Numbers never overlap. */
+/**
+ * An "on screen" comment is one numbered pin on the right edge: beside the element that was
+ * mid-screen, or at the middle of what the reviewer was looking at. Pins never overlap.
+ */
 let usedBadgeYs: number[] = [];
-function band(area: { y: number; h: number }, label: string, cls = '', clickable = false) {
-  const s = ui();
+function pin(area: { y: number; h: number; el: Element | null }, label: string, cls = '') {
   const right = document.documentElement.clientWidth;
-  let y = Math.max(6, area.y); // never cut off at the top of the page
+  let y = Math.max(6, area.el ? area.y : area.y + area.h / 2 - 11); // never above the page top
   while (usedBadgeYs.some((u) => Math.abs(u - y) < 26)) y += 26;
   usedBadgeYs.push(y);
+  const num = badge(label, right - 40, y, cls, true);
+  ui().append(num);
+  return num;
+}
+/** The comment you opened: a band showing the area it was about, and its pin highlighted. */
+function showArea(area: { y: number; h: number }, label: string) {
   const b = document.createElement('div');
-  b.className = `band ${cls}`;
-  b.style.cssText = `left:${right - 10}px;top:${area.y}px;height:${area.h}px`;
-  const num = badge(label, right - 40, y, cls, clickable);
-  s.append(b, num);
-  return [b, num];
+  b.className = 'band pulse focus';
+  b.style.cssText = `left:${document.documentElement.clientWidth - 10}px;top:${area.y}px;height:${area.h}px`;
+  ui().append(b);
+  const existing = root?.querySelector<HTMLElement>(`.num[data-label="${CSS.escape(label)}"]`);
+  if (existing) existing.classList.add('active');
+  else pin({ ...area, el: null }, label, 'active focus');
 }
 function docRect(el: Element) {
   const r = el.getBoundingClientRect();
@@ -357,6 +368,7 @@ function flash(el: Element, label: string) {
 function clearMarks(only = '') {
   if (!root) return;
   root.querySelectorAll(only || '.box,.num,.band').forEach((n) => n.remove());
+  root.querySelectorAll('.num.active').forEach((n) => n.classList.remove('active'));
   if (!only) usedBadgeYs = [];
 }
 
@@ -369,7 +381,7 @@ function drawMarkers() {
       if (r.method === 'textQuote' || r.method === 'cssPath')
         rectBox(docRect(r.element), m.label, '', true);
     } else if (m.anchor.kind === 'viewport' && m.anchor.pagePath === location.pathname) {
-      band(viewportArea(m.anchor), m.label, '', true);
+      pin(viewportArea(m.anchor), m.label);
     }
   }
 }
@@ -416,7 +428,7 @@ function show(anchor: Anchor, label: string, requestId?: string) {
       top: Math.max(0, area.y - (area.el ? window.innerHeight / 4 : 0)),
       behavior: 'smooth',
     });
-    band(area, label, 'pulse focus');
+    showArea(area, label);
   }
   if (requestId) post({ ft: 1, type: 'anchor:located', requestId, found, method });
 }
