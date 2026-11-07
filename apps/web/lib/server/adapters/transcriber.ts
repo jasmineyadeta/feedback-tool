@@ -71,16 +71,22 @@ type WhisperVerbose = {
   segments?: { words?: { word: string; start: number; end: number }[] }[];
 };
 
-/** Whisper emits punctuation as separate tokens; attach them to the previous word. */
+/**
+ * Whisper emits word pieces and punctuation as separate tokens. A token that doesn't start with a
+ * space continues the previous word (" V" + "ietnam", " you" + "'re", "enough" + ".").
+ */
 export function fromWhisper(r: WhisperVerbose): TranscriptResult {
   const words: TranscriptResult['words'] = [];
-  for (const seg of r.segments ?? [])
+  for (const seg of r.segments ?? []) {
+    const segStart = words.length; // word pieces never continue across segments
     for (const t of seg.words ?? []) {
       const w = t.word.trim();
       if (!w || /^\[.*\]$/.test(w)) continue; // skip empties and [BLANK_AUDIO]-style markers
       const prev = words[words.length - 1];
-      if (prev && /^[^\p{L}\p{N}]+$/u.test(w)) {
+      const piece = words.length > segStart && !/^\s/.test(t.word);
+      if (prev && (piece || /^[^\p{L}\p{N}]+$/u.test(w))) {
         prev.w = (prev.w + w).slice(0, 100);
+        prev.end = Math.max(prev.end, t.end);
         continue;
       }
       words.push({
@@ -89,5 +95,6 @@ export function fromWhisper(r: WhisperVerbose): TranscriptResult {
         end: Math.max(t.start, t.end),
       });
     }
+  }
   return { text: words.map((w) => w.w).join(' '), words };
 }

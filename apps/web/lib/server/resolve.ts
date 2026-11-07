@@ -12,8 +12,9 @@ import type {
 
 /**
  * Turning a transcript into comments (SPEC §5.2). Pure functions — no I/O — so they're easy to test.
- * Slice order: tap split (deterministic) → [AI pass on untapped segments, added separately] →
- * viewport fallback → merge short segments → text cleanup (no rewording).
+ * Slice order: tap split (deterministic) → AI pass on untapped segments → split what's still
+ * unanchored where the view moved → viewport fallback → merge short segments → text cleanup
+ * (no rewording).
  */
 export type Segment = {
   from: number; // word index, inclusive
@@ -59,6 +60,78 @@ export function midMs(words: TranscriptWord[], seg: Segment): number {
   const a = words[seg.from]!;
   const b = words[seg.to - 1]!;
   return ((a.start + b.end) / 2) * 1000;
+}
+
+/** Where the reviewer was looking at time `ms`: page, PDF page and scroll position. */
+function viewAt(timeline: Timeline, ms: number) {
+  const s = nearestSnapshot(timeline, ms);
+  if (!s) return null;
+  const a = s.viewportAnchor;
+  return {
+    path: s.pagePath,
+    page: a.kind === 'pdf-page' || a.kind === 'pdf' ? a.page : 0,
+    y: s.scrollY,
+    h: a.kind === 'viewport' ? a.viewport.h : 700,
+  };
+}
+
+const MOVE_FRACTION = 0.5; // scrolled at least half a screen
+const PAUSE_S = 0.4;
+const WINDOW_S = { before: 3, after: 4 }; // where to look for a good break around a view change
+const VIEW_MIN_WORDS = 8; // a scroll-based piece is at least a short sentence
+const FILLER = /^(um+|uh+|erm|hmm+)[.,!?]*$/i;
+
+/** How good a place it is to start a new comment before word i (0 = not a break). */
+function breakScore(words: TranscriptWord[], i: number): number {
+  const prev = words[i - 1]!;
+  const gap = words[i]!.start - prev.end;
+  const sentence = /[.!?]$/.test(prev.w);
+  const filler = FILLER.test(prev.w);
+  if (!sentence && !filler && gap < PAUSE_S) return 0;
+  return (sentence ? 3 : 0) + (filler ? 2 : 0) + Math.min(gap, 1.5);
+}
+
+/**
+ * Step 3b: a stretch of talk with no tap and no AI element is split where the view changed
+ * (another page, another PDF page, or scrolled ≥ half a screen), so each piece lands where the
+ * reviewer was looking. The cut goes at the best natural break near the change: end of a
+ * sentence, after an "um", or the longest pause.
+ */
+export function viewSplit(words: TranscriptWord[], segs: Segment[], timeline: Timeline): Segment[] {
+  const out: Segment[] = [];
+  for (const seg of segs) {
+    if (seg.anchor || seg.tap) {
+      out.push(seg);
+      continue;
+    }
+    let start = seg.from;
+    let base = viewAt(timeline, words[start]!.start * 1000);
+    for (let i = seg.from + 1; i < seg.to; i++) {
+      const now = viewAt(timeline, words[i]!.start * 1000);
+      if (!base || !now) continue;
+      const moved =
+        now.path !== base.path ||
+        now.page !== base.page ||
+        Math.abs(now.y - base.y) >= MOVE_FRACTION * base.h;
+      if (!moved) continue;
+      const t = words[i]!.start;
+      let best = -1;
+      let bestScore = 0;
+      for (let j = start + VIEW_MIN_WORDS; j <= seg.to - VIEW_MIN_WORDS; j++) {
+        if (words[j]!.start < t - WINDOW_S.before) continue;
+        if (words[j]!.start > t + WINDOW_S.after) break;
+        const score = breakScore(words, j);
+        if (score > bestScore) [best, bestScore] = [j, score];
+      }
+      if (best < 0) continue; // no natural break nearby yet; try again at the next word
+      out.push({ ...seg, from: start, to: best });
+      start = best;
+      base = viewAt(timeline, words[best]!.start * 1000);
+      i = best;
+    }
+    out.push({ ...seg, from: start, to: seg.to });
+  }
+  return out;
 }
 
 /** Step 4: anything still without an anchor gets the viewport anchor nearest its midpoint. */
@@ -128,7 +201,8 @@ export function resolveDeterministic(
   words: TranscriptWord[],
   timeline: Timeline,
 ): ProposedComment[] {
-  const segs = fillViewport(words, tapSplit(words, timeline.taps), timeline);
+  const split = viewSplit(words, tapSplit(words, timeline.taps), timeline);
+  const segs = fillViewport(words, split, timeline);
   return toProposed(recordingClientId, words, mergeShort(segs));
 }
 
@@ -191,7 +265,7 @@ export async function resolveWithAI(
       });
     }
   }
-  const segs = fillViewport(words, out, timeline);
+  const segs = fillViewport(words, viewSplit(words, out, timeline), timeline);
   return { proposed: toProposed(recordingClientId, words, mergeShort(segs)), stats };
 }
 

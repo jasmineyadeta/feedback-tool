@@ -46,3 +46,7 @@ Done by the agent in the iOS Simulator (iPhone 17, Safari), 2026-11-04, with `pn
 The agent can open pages in the Simulator but can't tap or talk in it. Left for Jas (Simulator or iPhone):
 - [ ] Follow `docs/DEMO_SCRIPT.md` steps 3–4 end to end as the reviewer: typed comment, talk-through with your voice, submit, then read it as the owner.
   - Good: every step fits the screen, taps land where you meant, and every comment appears in the right place for the owner.
+
+## Talk-through follows the view (2026-11-06)
+- [ ] On a long website, **Record**, talk about the top, scroll down and talk about the next section, scroll again and talk, then **Stop**, without tapping.
+  - Good: "Here's what we heard" shows one comment per section, each with your exact words. In the owner view, each comment jumps to the part of the page you were looking at. Names like "Vietnam" come out as one word.

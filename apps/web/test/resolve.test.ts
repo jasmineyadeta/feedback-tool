@@ -5,6 +5,7 @@ import {
   mergeShort,
   resolveDeterministic,
   tapSplit,
+  viewSplit,
   type Segment,
 } from '@/lib/server/resolve';
 
@@ -99,5 +100,82 @@ describe('resolveDeterministic', () => {
   });
   it('empty transcript → no comments', () => {
     expect(resolveDeterministic('rec123', [], timeline())).toEqual([]);
+  });
+});
+
+describe('viewSplit: untapped talk follows where the reviewer was looking', () => {
+  const view = (y: number, path = '/'): Anchor => ({
+    kind: 'viewport',
+    pageUrl: `https://example.com${path}`,
+    pagePath: path,
+    scroll: { x: 0, y },
+    viewport: { w: 390, h: 800, dpr: 3 },
+    visibleTextSample: '',
+  });
+  // scrollY by second: top for 0–5 s, then scrolled 1,000 px down from 6 s on.
+  const scrolled = (ys: (s: number) => number, path = (_s: number) => '/'): Timeline => ({
+    taps: [],
+    snapshots: Array.from({ length: 13 }, (_, s) => ({
+      t: s * 1000,
+      pagePath: path(s),
+      scrollY: ys(s),
+      elements: [],
+      viewportAnchor: view(ys(s), path(s)),
+    })),
+  });
+  // 24 words, 0.5 s apart; "um" at word 9 (ends a thought), a pause before word 14.
+  const talk = (): TranscriptWord[] => {
+    const ws = words(
+      'the hero image is lovely and loads fast too um the project cards need short descriptions under each title please',
+    );
+    return ws.map((w, i) => (i >= 14 ? { ...w, start: w.start + 0.6, end: w.end + 0.6 } : w));
+  };
+  const untapped = (n: number): Segment[] => [
+    { from: 0, to: n, tap: null, anchor: null, source: 'viewport' },
+  ];
+
+  it('splits after "um" near the scroll and pins each piece to what was on screen', () => {
+    const W2 = talk();
+    const out = resolveDeterministic(
+      'r',
+      W2,
+      scrolled((s) => (s < 6 ? 0 : 1000)),
+    );
+    expect(out.map((c) => c.text)).toEqual([
+      'The hero image is lovely and loads fast too um',
+      'The project cards need short descriptions under each title please',
+    ]);
+    expect(out.map((c) => (c.anchor as { scroll: { y: number } }).scroll.y)).toEqual([0, 1000]);
+    expect(out.map((c) => c.transcriptOriginal).join(' ')).toBe(W2.map((w) => w.w).join(' '));
+  });
+  it('a small scroll (under half a screen) keeps one comment', () => {
+    const segs = viewSplit(
+      talk(),
+      untapped(19),
+      scrolled((s) => (s < 6 ? 0 : 300)),
+    );
+    expect(segs).toHaveLength(1);
+  });
+  it('moving to another page splits too', () => {
+    const segs = viewSplit(
+      talk(),
+      untapped(19),
+      scrolled(
+        () => 0,
+        (s) => (s < 6 ? '/' : '/work'),
+      ),
+    );
+    expect(segs.map((s) => [s.from, s.to])).toEqual([
+      [0, 10],
+      [10, 19],
+    ]);
+  });
+  it('never cuts pieces shorter than a short sentence, and leaves anchored segments alone', () => {
+    const W2 = talk();
+    const jumpy = scrolled((s) => (s % 2 ? 2000 : 0)); // scrolling up and down every second
+    for (const s of viewSplit(W2, untapped(19), jumpy))
+      expect(s.to - s.from).toBeGreaterThanOrEqual(8);
+    const tapped: Segment[] = [{ from: 0, to: 19, tap: tap(0), anchor: pin(1), source: 'tap' }];
+    expect(viewSplit(W2, tapped, jumpy)).toEqual(tapped);
   });
 });
