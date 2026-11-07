@@ -69,6 +69,9 @@ export const ViewportAnchor = z.object({
   scroll: Scroll,
   viewport: Viewport,
   visibleTextSample: str(300),
+  /** The element in the middle of the screen at that moment, so the owner's marker lands on the
+   * same area even when their layout differs from the reviewer's. Absent on older comments. */
+  focus: z.optional(DomAnchor),
 });
 export type ViewportAnchor = z.infer<typeof ViewportAnchor>;
 

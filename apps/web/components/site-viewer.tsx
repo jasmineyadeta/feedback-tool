@@ -28,6 +28,8 @@ export function SiteViewer(p: {
   onSnapshot?: (s: TimelineSnapshot) => void;
   onPath?: (path: string) => void;
   onLocated?: (method: LocateMethod) => void;
+  /** A number on the page was clicked: the marker's comment id. */
+  onMarker?: (id: string) => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [path, setPath] = useState<string | null>(null);
@@ -95,6 +97,11 @@ export function SiteViewer(p: {
         case 'external-link':
           setExternal(m.host);
           break;
+        case 'marker:click': {
+          const hit = cur.markers.find((x) => String(x.n) === m.label);
+          if (hit) cur.onMarker?.(hit.id);
+          break;
+        }
       }
     };
     window.addEventListener('message', onMsg);
@@ -172,7 +179,10 @@ export function SiteViewer(p: {
 
 function markersFor(markers: SiteMarker[], path: string) {
   return markers
-    .filter((m) => m.anchor.kind === 'dom' && m.anchor.pagePath === path)
+    .filter(
+      (m) =>
+        (m.anchor.kind === 'dom' || m.anchor.kind === 'viewport') && m.anchor.pagePath === path,
+    )
     .slice(0, 60)
     .map((m) => ({ anchor: m.anchor, label: String(m.n) }));
 }

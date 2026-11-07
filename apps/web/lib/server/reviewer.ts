@@ -339,7 +339,12 @@ export function anchorFits(
 
 /** Never store the proxy URL or query strings (may hold PII): pageUrl becomes site origin + path. */
 export function cleanAnchor(review: Pick<ReviewRow, 'site_url'>, a: DraftAnchor): DraftAnchor {
-  if ((a.kind === 'dom' || a.kind === 'viewport') && review.site_url)
-    return { ...a, pageUrl: new URL(a.pagePath, review.site_url).origin + a.pagePath };
+  if ((a.kind === 'dom' || a.kind === 'viewport') && review.site_url) {
+    const at = (path: string) => new URL(path, review.site_url!).origin + path;
+    const out = { ...a, pageUrl: at(a.pagePath) };
+    if (out.kind === 'viewport' && out.focus)
+      out.focus = { ...out.focus, pageUrl: at(out.focus.pagePath) };
+    return out;
+  }
   return a;
 }

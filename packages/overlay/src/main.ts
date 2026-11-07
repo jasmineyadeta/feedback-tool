@@ -5,7 +5,7 @@
  * - Capture mode (recording) and pick mode (typed comment): taps become anchors, site clicks suppressed.
  */
 import { parseShellMessage, type OverlayToShell, type ShellToOverlay } from '@ft/shared/protocol';
-import type { Anchor, DomAnchor } from '@ft/shared/anchor';
+import type { Anchor, DomAnchor, ViewportAnchor } from '@ft/shared/anchor';
 import type { TimelineSnapshot, VisibleElement } from '@ft/shared/timeline';
 import {
   buildDomAnchor,
@@ -280,22 +280,71 @@ function ui(): ShadowRoot {
     .pulse{animation:p 1.2s ease-out 2}
     @keyframes p{0%{box-shadow:0 0 0 0 rgba(47,91,211,.6)}100%{box-shadow:0 0 0 14px rgba(47,91,211,0)}}
     .num{position:absolute;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#2f5bd3;color:#fff;font:600 12px/22px system-ui,sans-serif;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+    .click{pointer-events:auto;cursor:pointer}
+    .click:focus-visible{outline:2px solid #1c1f23;outline-offset:2px}
+    .band{position:absolute;width:6px;border-radius:3px;background:rgba(47,91,211,.5)}
+    .band.pulse{animation:b 1.2s ease-out 2}
+    @keyframes b{0%{box-shadow:0 0 0 0 rgba(47,91,211,.6)}100%{box-shadow:0 0 0 10px rgba(47,91,211,0)}}
     .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#1c1f23;color:#fff;font:14px system-ui,sans-serif;padding:8px 12px;border-radius:6px}`;
   root.appendChild(style);
   return root;
 }
-function rectBox(r: { x: number; y: number; w: number; h: number }, label: string, cls = '') {
+type Box = { x: number; y: number; w: number; h: number };
+function badge(label: string, x: number, y: number, cls: string, clickable: boolean) {
+  const num = document.createElement('div');
+  num.className = `num ${cls}`;
+  num.textContent = label;
+  num.setAttribute('aria-label', `Comment ${label}`);
+  num.style.cssText = `left:${x}px;top:${y}px`;
+  if (clickable) {
+    // Clicking a number on the page selects that comment in the list.
+    num.classList.add('click');
+    num.setAttribute('role', 'button');
+    num.tabIndex = 0;
+    const pick = () => mode === 'browse' && post({ ft: 1, type: 'marker:click', label });
+    num.addEventListener('click', pick);
+    num.addEventListener('keydown', (e) => e.key === 'Enter' && pick());
+  }
+  return num;
+}
+function rectBox(r: Box, label: string, cls = '', clickable = false) {
   const s = ui();
   const box = document.createElement('div');
   box.className = `box ${cls}`;
   box.style.cssText = `left:${r.x - 3}px;top:${r.y - 3}px;width:${r.w + 6}px;height:${r.h + 6}px`;
-  const num = document.createElement('div');
-  num.className = 'num';
-  num.textContent = label;
-  num.setAttribute('aria-label', `Comment ${label}`);
-  num.style.cssText = `left:${r.x - 11}px;top:${r.y - 11}px`;
+  const num = badge(label, r.x - 11, r.y - 11, cls, clickable);
   s.append(box, num);
   return [box, num];
+}
+
+/**
+ * Where an "on screen" comment's area is on this page: the element that was mid-screen when it was
+ * said (if it's still here), otherwise the reviewer's scroll position. Document coordinates.
+ */
+function viewportArea(a: ViewportAnchor): { y: number; h: number; el: Element | null } {
+  if (a.focus && a.focus.pagePath === location.pathname) {
+    const r = locate(a.focus, document);
+    if (r.method === 'textQuote' || r.method === 'cssPath') {
+      const d = docRect(r.element);
+      return { y: d.y, h: Math.min(Math.max(d.h, 120), window.innerHeight), el: r.element };
+    }
+  }
+  return { y: a.scroll.y, h: Math.min(a.viewport.h, window.innerHeight), el: null };
+}
+/** A band down the right edge beside the area, with its number. Numbers never overlap. */
+let usedBadgeYs: number[] = [];
+function band(area: { y: number; h: number }, label: string, cls = '', clickable = false) {
+  const s = ui();
+  const right = document.documentElement.clientWidth;
+  let y = Math.max(6, area.y); // never cut off at the top of the page
+  while (usedBadgeYs.some((u) => Math.abs(u - y) < 26)) y += 26;
+  usedBadgeYs.push(y);
+  const b = document.createElement('div');
+  b.className = `band ${cls}`;
+  b.style.cssText = `left:${right - 10}px;top:${area.y}px;height:${area.h}px`;
+  const num = badge(label, right - 40, y, cls, clickable);
+  s.append(b, num);
+  return [b, num];
 }
 function docRect(el: Element) {
   const r = el.getBoundingClientRect();
@@ -305,10 +354,34 @@ function flash(el: Element, label: string) {
   const nodes = rectBox(docRect(el), label);
   if (mode === 'pick') window.setTimeout(() => nodes.forEach((n) => n.remove()), 1500);
 }
-function clearMarks() {
+function clearMarks(only = '') {
   if (!root) return;
-  root.querySelectorAll('.box,.num').forEach((n) => n.remove());
+  root.querySelectorAll(only || '.box,.num,.band').forEach((n) => n.remove());
+  if (!only) usedBadgeYs = [];
 }
+
+let markers: { anchor: Anchor; label: string }[] = [];
+function drawMarkers() {
+  clearMarks();
+  for (const m of markers) {
+    if (m.anchor.kind === 'dom' && m.anchor.pagePath === location.pathname) {
+      const r = locate(m.anchor, document);
+      if (r.method === 'textQuote' || r.method === 'cssPath')
+        rectBox(docRect(r.element), m.label, '', true);
+    } else if (m.anchor.kind === 'viewport' && m.anchor.pagePath === location.pathname) {
+      band(viewportArea(m.anchor), m.label, '', true);
+    }
+  }
+}
+// Pages shift as images and fonts load; redraw so markers stay beside their areas.
+let redrawTimer: number | undefined;
+const redrawSoon = () => {
+  if (!markers.length) return;
+  window.clearTimeout(redrawTimer);
+  redrawTimer = window.setTimeout(drawMarkers, 250);
+};
+window.addEventListener('resize', redrawSoon);
+window.addEventListener('load', redrawSoon);
 function toast(text: string) {
   const s = ui();
   const t = document.createElement('div');
@@ -328,16 +401,22 @@ function show(anchor: Anchor, label: string, requestId?: string) {
     if (r.method === 'textQuote' || r.method === 'cssPath') {
       found = true;
       r.element.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      window.setTimeout(() => rectBox(docRect(r.element), label, 'pulse'), 350);
+      window.setTimeout(() => rectBox(docRect(r.element), label, 'pulse focus'), 350);
     } else if (r.method === 'rect') {
       found = true;
       window.scrollTo({ top: Math.max(0, r.rect.y - window.innerHeight / 3), behavior: 'smooth' });
-      rectBox(r.rect, label, 'pulse');
+      rectBox(r.rect, label, 'pulse focus');
     }
   } else if (anchor.kind === 'viewport' && anchor.pagePath === location.pathname) {
     found = true;
-    method = 'rect';
-    window.scrollTo({ top: anchor.scroll.y, behavior: 'smooth' });
+    const area = viewportArea(anchor);
+    // "Changed" only when the element that was mid-screen is gone; older comments have no element.
+    method = anchor.focus && !area.el ? 'rect' : 'cssPath';
+    window.scrollTo({
+      top: Math.max(0, area.y - (area.el ? window.innerHeight / 4 : 0)),
+      behavior: 'smooth',
+    });
+    band(area, label, 'pulse focus');
   }
   if (requestId) post({ ft: 1, type: 'anchor:located', requestId, found, method });
 }
@@ -366,20 +445,16 @@ window.addEventListener('message', (e: MessageEvent) => {
       setMode('browse');
       break;
     case 'anchor:show':
-      clearMarks();
+      clearMarks('.focus'); // the other markers stay visible
       show(msg.anchor, msg.label, msg.requestId);
       break;
     case 'anchor:clear':
+      markers = [];
       clearMarks();
       break;
     case 'markers:set':
-      clearMarks();
-      for (const m of msg.markers)
-        if (m.anchor.kind === 'dom' && m.anchor.pagePath === location.pathname) {
-          const r = locate(m.anchor, document);
-          if (r.method === 'textQuote' || r.method === 'cssPath')
-            rectBox(docRect(r.element), m.label);
-        }
+      markers = msg.markers;
+      drawMarkers();
       break;
   }
 });

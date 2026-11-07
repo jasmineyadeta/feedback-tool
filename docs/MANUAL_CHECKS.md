@@ -50,3 +50,5 @@ The agent can open pages in the Simulator but can't tap or talk in it. Left for 
 ## Talk-through follows the view (2026-11-06)
 - [ ] On a long website, **Record**, talk about the top, scroll down and talk about the next section, scroll again and talk, then **Stop**, without tapping.
   - Good: "Here's what we heard" shows one comment per section, each with your exact words. In the owner view, each comment jumps to the part of the page you were looking at. Names like "Vietnam" come out as one word.
+- [ ] Open that review's **Feedback** on the laptop and scroll the site.
+  - Good: every comment has a number on the page (outline for taps, a band on the right edge for "On screen"), beside what you were talking about. Clicking a number highlights that comment in the list.

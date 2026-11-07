@@ -2,6 +2,7 @@ import { snapshotsFor, validateSpans } from './validate-spans';
 import type {
   AnchorResolver,
   Anchor,
+  DomAnchor,
   CommentSource,
   ProposedComment,
   Timeline,
@@ -134,6 +135,33 @@ export function viewSplit(words: TranscriptWord[], segs: Segment[], timeline: Ti
   return out;
 }
 
+/**
+ * The element across the middle of the screen: the smallest one at least a third of the screen
+ * wide whose box crosses the vertical centre line. Falls back to the element nearest the centre.
+ */
+export function focusElement(s: TimelineSnapshot): DomAnchor | undefined {
+  const a = s.viewportAnchor;
+  if (a.kind !== 'viewport') return undefined;
+  const mid = a.viewport.h / 2;
+  const doms = s.elements.flatMap((e) =>
+    e.anchor?.kind === 'dom' ? [{ r: e.rectViewport, anchor: e.anchor }] : [],
+  );
+  const across = doms
+    .filter(({ r }) => r.y <= mid && r.y + r.h >= mid && r.w >= a.viewport.w / 3 && r.h >= 40)
+    .sort((x, y) => x.r.w * x.r.h - y.r.w * y.r.h);
+  if (across[0]) return across[0].anchor;
+  const dist = (r: { y: number; h: number }) => Math.abs(r.y + r.h / 2 - mid);
+  return doms.sort((x, y) => dist(x.r) - dist(y.r))[0]?.anchor;
+}
+
+function viewportFor(s: TimelineSnapshot | null): Anchor | null {
+  if (!s) return null;
+  const a = s.viewportAnchor;
+  if (a.kind !== 'viewport' || a.focus) return a;
+  const focus = focusElement(s);
+  return focus ? { ...a, focus } : a;
+}
+
 /** Step 4: anything still without an anchor gets the viewport anchor nearest its midpoint. */
 export function fillViewport(words: TranscriptWord[], segs: Segment[], timeline: Timeline) {
   return segs.map((s) =>
@@ -141,7 +169,7 @@ export function fillViewport(words: TranscriptWord[], segs: Segment[], timeline:
       ? s
       : {
           ...s,
-          anchor: nearestSnapshot(timeline, midMs(words, s))?.viewportAnchor ?? null,
+          anchor: viewportFor(nearestSnapshot(timeline, midMs(words, s))),
           source: 'viewport' as const,
         },
   );

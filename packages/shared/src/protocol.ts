@@ -34,6 +34,7 @@ export const OverlayToShell = z.discriminatedUnion('type', [
     method: z.enum(['textQuote', 'cssPath', 'rect', 'none']),
   }),
   z.object({ ...base, type: z.literal('external-link'), host: str(253) }),
+  z.object({ ...base, type: z.literal('marker:click'), label: str(8) }),
   z.object({
     ...base,
     type: z.literal('error'),

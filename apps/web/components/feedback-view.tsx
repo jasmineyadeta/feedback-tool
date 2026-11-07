@@ -67,7 +67,9 @@ export function FeedbackView(p: {
   );
 
   const siteMarkers: SiteMarker[] = pinned.flatMap((c) =>
-    c.anchor?.kind === 'dom' ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor }] : [],
+    c.anchor?.kind === 'dom' || c.anchor?.kind === 'viewport'
+      ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor }]
+      : [],
   );
 
   const shotMarkers: ShotMarker[] = pinned.flatMap((c) =>
@@ -149,6 +151,15 @@ export function FeedbackView(p: {
         block: c?.anchor?.kind === 'pdf-page' ? 'start' : 'center',
         inline: 'center',
       }),
+    );
+  }
+
+  /** A marker on the artifact was clicked: select its comment in the list. */
+  function showInList(id: string) {
+    setActive(id);
+    setSheetOpen(true);
+    requestAnimationFrame(() =>
+      document.querySelector(`[data-comment-anchor="${id}"]`)?.scrollIntoView({ block: 'nearest' }),
     );
   }
 
@@ -365,6 +376,7 @@ export function FeedbackView(p: {
                 focus={focus}
                 onPick={(a) => a.kind === 'dom' && void move(a)}
                 onLocated={(method) => setLocated((l) => l && { ...l, method })}
+                onMarker={showInList}
               />
               {located && (
                 <LocateNote
@@ -382,15 +394,7 @@ export function FeedbackView(p: {
               markers={markers}
               picking={!!moving}
               onPick={(a) => void move(a)}
-              onMarker={(id) => {
-                setActive(id);
-                setSheetOpen(true);
-                requestAnimationFrame(() =>
-                  document
-                    .querySelector(`[data-comment-anchor="${id}"]`)
-                    ?.scrollIntoView({ block: 'nearest' }),
-                );
-              }}
+              onMarker={showInList}
             />
           )}
         </div>
