@@ -7,7 +7,7 @@ PIDS="$RUN_DIR/phone.pids"
 : >"$PIDS"
 
 tunnel() { # name port -> prints https URL
-  local name="$1" port="$2" log="$RUN_DIR/tunnel-$1.log"
+  local name="$1" port="$2" log="$LOG_DIR/tunnel-$1.log"
   nohup cloudflared tunnel --url "http://localhost:$port" --no-autoupdate >"$log" 2>&1 &
   echo "tunnel-$name $!" >>"$PIDS"
   for _ in $(seq 60); do

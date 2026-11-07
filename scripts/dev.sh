@@ -10,7 +10,7 @@ PIDS="$RUN_DIR/dev.pids"
 
 start_bg() { # name cmd...
   local name="$1"; shift
-  nohup "$@" >"$RUN_DIR/$name.log" 2>&1 &
+  nohup "$@" >"$LOG_DIR/$name.log" 2>&1 &
   echo "$name $!" >>"$PIDS"
 }
 
@@ -42,7 +42,7 @@ c_ok "App (next dev) starting on :3000"
 # In-process jobs scheduler (audio purge etc.) — runs hourly.
 start_bg jobs bash -c 'while true; do pnpm --filter @ft/web jobs:run; sleep 3600; done'
 
-wait_for_url http://localhost:3000/api/health 90 || c_warn "App is slow to start — see .run/web.log"
+wait_for_url http://localhost:3000/api/health 90 || c_warn "App is slow to start — see $LOG_DIR/web.log"
 
 cat <<EOF
 
@@ -50,7 +50,7 @@ cat <<EOF
   Proxy:         $PROXY_ORIGIN
   Email inbox:   $(sb_env MAILPIT_URL)
   Supabase:      $(sb_env STUDIO_URL)  (database UI)
-  Logs:          .run/*.log
+  Logs:          $LOG_DIR/*.log
 
   Dev sign-in:   open $APP_ORIGIN/sign-in and use "Sign in as Jas (dev only)".
   Stop:          Ctrl-C stops the app; pnpm dev:stop stops everything incl. Supabase.

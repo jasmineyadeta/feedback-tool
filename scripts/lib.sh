@@ -7,7 +7,10 @@ RUN_DIR="$ROOT/.run"
 MODELS_DIR="${FT_MODELS_DIR:-$HOME/.cache/feedback-tool/models}"
 WHISPER_MODEL="${WHISPER_MODEL:-large-v3-turbo}"
 ANCHOR_MODEL_DEFAULT="qwen3:14b"
-mkdir -p "$RUN_DIR"
+# Logs live outside the repo: Next.js (Turbopack) watches the whole workspace, so a log written
+# inside it on every request triggered a rebuild, which reloaded the page, which wrote the log… (loop).
+LOG_DIR="${FT_LOG_DIR:-$HOME/.cache/feedback-tool/logs}"
+mkdir -p "$RUN_DIR" "$LOG_DIR"
 
 if [ -x /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)"; fi
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
@@ -28,8 +31,8 @@ ensure_supabase() {
   fi
   if supabase_running; then c_ok "Supabase running"; else
     c_do "Starting Supabase (first run downloads images; can take a few minutes)…"
-    (cd "$ROOT" && supabase start >"$RUN_DIR/supabase-start.log" 2>&1) || {
-      c_err "supabase start failed — see .run/supabase-start.log"; return 1; }
+    (cd "$ROOT" && supabase start >"$LOG_DIR/supabase-start.log" 2>&1) || {
+      c_err "supabase start failed — see $LOG_DIR/supabase-start.log"; return 1; }
     c_ok "Supabase started"
   fi
 }

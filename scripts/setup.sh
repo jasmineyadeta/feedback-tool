@@ -65,9 +65,9 @@ fi
 anchor_model="$(cat "$RUN_DIR/anchor-model" 2>/dev/null || echo "$ANCHOR_MODEL_DEFAULT")"
 started_ollama=0
 if ! curl -sf http://127.0.0.1:11434/api/tags >/dev/null; then
-  nohup ollama serve >"$RUN_DIR/ollama.log" 2>&1 &
+  nohup ollama serve >"$LOG_DIR/ollama.log" 2>&1 &
   echo $! >"$RUN_DIR/ollama-setup.pid"; started_ollama=1
-  wait_for_url http://127.0.0.1:11434/api/tags 30 || { c_err "Ollama didn't start — see .run/ollama.log"; exit 1; }
+  wait_for_url http://127.0.0.1:11434/api/tags 30 || { c_err "Ollama didn't start — see $LOG_DIR/ollama.log"; exit 1; }
 fi
 if ollama list 2>/dev/null | awk '{print $1}' | grep -qx "$anchor_model"; then c_ok "Ollama model $anchor_model"; else
   c_do "Pulling Ollama model $anchor_model (~9 GB)…"
@@ -77,8 +77,8 @@ if [ "$started_ollama" = 1 ]; then kill "$(cat "$RUN_DIR/ollama-setup.pid")" 2>/
 
 # --- Supabase + migrations + seed
 ensure_supabase
-if supabase migration up >"$RUN_DIR/migrate.log" 2>&1; then c_ok "Migrations up to date"; else
-  c_err "Migration failed — see .run/migrate.log"; exit 1; fi
+if supabase migration up >"$LOG_DIR/migrate.log" 2>&1; then c_ok "Migrations up to date"; else
+  c_err "Migration failed — see $LOG_DIR/migrate.log"; exit 1; fi
 write_env_files
 c_ok "Env files written (apps/web/.env.local, apps/proxy/.dev.vars)"
 pnpm exec tsx scripts/seed.ts && c_ok "Seed data (dev owner jas@local.test)"
