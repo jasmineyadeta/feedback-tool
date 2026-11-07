@@ -60,3 +60,7 @@ The agent can open pages in the Simulator but can't tap or talk in it. Left for 
 ## Tone colours (2026-11-06)
 - [ ] Submit a review with a mix of praise and criticism, then open **Feedback** (refresh after a few seconds).
   - Good: criticism and suggestions are red **Action**, compliments green **Praise**, narration blue **Note**; numbers on the page match. **Filter by tone → Action only** leaves your to-do list. Clicking a label changes it and it stays changed after a refresh.
+
+## Phone reviewing, resume and website (2026-11-07)
+- [ ] On an iPhone (or the Simulator), review `docs/samples/sample-resume.pdf` and a live site: record, tap things, stop, then edit/move/delete in the list and submit.
+  - Good: nothing is cut off; every button is easy to hit with a thumb; the comment sheet doesn't hide what you're commenting on for long; pinch-zoom on the PDF still works while recording; the keyboard doesn't cover the comment box.

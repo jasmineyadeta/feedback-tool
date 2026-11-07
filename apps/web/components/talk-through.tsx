@@ -355,7 +355,7 @@ export function RecordingBar({ tt }: { tt: TalkThrough }) {
   if (tt.phase !== 'recording') return null;
   return (
     <div
-      className="flex shrink-0 items-center gap-3 bg-ink px-3 py-2 text-sm text-white"
+      className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 bg-ink px-3 py-2 text-sm text-white"
       role="status"
       aria-label="Recording"
     >
@@ -364,22 +364,27 @@ export function RecordingBar({ tt }: { tt: TalkThrough }) {
         aria-hidden
       />
       <span className="tabular-nums">{fmt(tt.elapsed)}</span>
-      <span className="hidden min-w-0 flex-1 truncate text-white/70 sm:inline">
+      {/* Phones: the hint gets its own line under the controls instead of being cut off. */}
+      <span className="order-last basis-full text-xs text-white/70 sm:order-none sm:min-w-0 sm:flex-1 sm:basis-auto sm:truncate sm:text-sm">
         {tt.paused ? 'Paused' : 'Talk, and tap things to point at them. Tap again to undo.'}
       </span>
-      <span className="min-w-0 flex-1 truncate text-xs text-white/70 sm:hidden">
-        {tt.paused ? '' : 'Tap again to undo'}
-      </span>
-      <button className="rounded px-2 py-1 ring-1 ring-white/40" onClick={tt.togglePause}>
+      <span className="flex-1 sm:hidden" />
+      <button
+        className="min-h-11 rounded px-3 py-1 ring-1 ring-white/40 sm:min-h-0 sm:px-2"
+        onClick={tt.togglePause}
+      >
         {tt.paused ? 'Resume' : 'Pause'}
       </button>
       <button
-        className="rounded bg-white px-3 py-1 font-medium text-ink"
+        className="min-h-11 rounded bg-white px-4 py-1 font-medium text-ink sm:min-h-0 sm:px-3"
         onClick={() => void tt.stop()}
       >
         Stop
       </button>
-      <button className="rounded px-2 py-1 text-white/80 underline" onClick={tt.cancel}>
+      <button
+        className="min-h-11 rounded px-2 py-1 text-white/80 underline sm:min-h-0"
+        onClick={tt.cancel}
+      >
         Cancel
       </button>
     </div>

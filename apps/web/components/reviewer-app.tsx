@@ -504,12 +504,15 @@ export function ReviewerApp(p: Props) {
           )}
         </div>
         <aside
-          className={`${listOpen ? 'fixed inset-x-0 bottom-0 z-30 max-h-[70dvh] rounded-t-xl shadow-2xl' : 'hidden'} flex-col overflow-auto border-l border-line bg-white md:static md:flex md:max-h-none md:w-80 md:rounded-none md:shadow-none`}
+          className={`${listOpen ? 'fixed inset-x-0 bottom-0 z-30 flex max-h-[62dvh] rounded-t-xl shadow-2xl' : 'hidden'} flex-col overflow-auto border-l border-line bg-white md:static md:flex md:max-h-none md:w-80 md:rounded-none md:shadow-none`}
           aria-label="Your comments"
         >
           <div className="sticky top-0 flex items-center justify-between border-b border-line bg-white px-4 py-3">
             <h2 className="text-sm font-semibold">Your comments ({list.length})</h2>
-            <button className="text-sm text-muted md:hidden" onClick={() => setListOpen(false)}>
+            <button
+              className="min-h-11 rounded-md px-3 text-sm font-medium text-ink ring-1 ring-line md:hidden"
+              onClick={() => setListOpen(false)}
+            >
               Close
             </button>
           </div>
@@ -543,7 +546,7 @@ export function ReviewerApp(p: Props) {
                   <span className="mt-1 block whitespace-pre-wrap">{c.text}</span>
                 </button>
                 {!readOnly && (
-                  <div className="mt-2 flex gap-3 text-xs">
+                  <div className="mt-1 flex flex-wrap gap-x-4 text-sm md:mt-2 md:gap-x-3 md:text-xs [&>button]:min-h-11 md:[&>button]:min-h-0">
                     <button
                       className="underline"
                       onClick={() =>
@@ -592,7 +595,7 @@ export function ReviewerApp(p: Props) {
       {/* Mobile action bar */}
       {!readOnly && (
         <nav
-          className={`${recording ? 'hidden' : 'grid'} shrink-0 grid-cols-4 gap-1.5 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden`}
+          className={`${recording ? 'hidden' : 'flex'} shrink-0 gap-1.5 border-t border-line bg-white p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden [&>button]:min-h-11 [&>button]:flex-auto [&>button]:whitespace-nowrap [&>button]:px-2`}
         >
           <button
             className={`${btn.primary} bg-rec px-2`}
