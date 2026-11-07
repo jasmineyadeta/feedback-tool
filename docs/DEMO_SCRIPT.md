@@ -22,7 +22,7 @@ pnpm dev:phone
 2. Sign in. The local inbox for magic links is http://127.0.0.1:54324. In dev there's also **Sign in as Jas (dev only)**.
 3. **New review**:
    - **Website**: paste a public portfolio address, for example one from `docs/test-portfolios.json`. Wait for **Live** or **Screenshot mode**, and read why.
-   - **PDF**: upload a resume (up to 30 pages).
+   - **PDF**: upload a resume (up to 30 pages). A realistic made-up one is in `docs/samples/sample-resume.pdf` (Maya Okafor, two pages).
 4. **Invite a reviewer**, type a name and **Copy link**. The link is shown only once.
 
 ## 3. Review it (as the reviewer, on your iPhone)
