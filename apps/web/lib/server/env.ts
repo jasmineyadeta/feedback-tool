@@ -15,6 +15,7 @@ const Env = z.object({
   MOCK_AI: z.enum(['0', '1']).default('0'),
   TRANSCRIBER: Impl.default('mock'),
   ANCHOR_RESOLVER: Impl.default('mock'),
+  TONE_CLASSIFIER: Impl.default('mock'),
   SCREENSHOT: Impl.default('mock'),
   MAILER: Impl.default('mock'),
   PROXY_HOST: z.enum(['local']).default('local'),
@@ -38,7 +39,9 @@ export function resetEnvCache() {
 }
 
 /** MOCK_AI=1 forces mock transcriber and resolver regardless of other settings. */
-export function aiImpl(kind: 'TRANSCRIBER' | 'ANCHOR_RESOLVER'): 'local' | 'mock' {
+export function aiImpl(
+  kind: 'TRANSCRIBER' | 'ANCHOR_RESOLVER' | 'TONE_CLASSIFIER',
+): 'local' | 'mock' {
   const e = env();
   return e.MOCK_AI === '1' ? 'mock' : e[kind];
 }

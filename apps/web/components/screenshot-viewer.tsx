@@ -1,9 +1,16 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { ScreenshotAnchor, TimelineSnapshot } from '@ft/shared';
+import type { ScreenshotAnchor, TimelineSnapshot, Tone } from '@ft/shared';
+import { TONE } from '@/lib/tone-style';
 import { pickScreen } from '@/lib/site-mode';
 
-export type ShotMarker = { id: string; n: number; anchor: ScreenshotAnchor; active: boolean };
+export type ShotMarker = {
+  id: string;
+  n: number;
+  anchor: ScreenshotAnchor;
+  active: boolean;
+  tone?: Tone | null;
+};
 type Screen = { name: string; width: number; url: string };
 
 /**
@@ -123,7 +130,7 @@ export function ScreenshotViewer(p: {
                   id={`marker-${m.id}`}
                   aria-label={`Comment ${m.n}`}
                   onClick={() => p.onMarker?.(m.id)}
-                  className={`absolute flex h-6 min-w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full px-1.5 text-xs font-semibold text-white shadow ${m.active ? 'bg-ink ring-2 ring-accent' : 'bg-accent'}`}
+                  className={`absolute flex h-6 min-w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full px-1.5 text-xs font-semibold text-white shadow ${m.active ? 'bg-ink ring-2 ring-accent' : m.tone ? TONE[m.tone].dot : 'bg-accent'}`}
                   style={{
                     left: `${m.anchor.point.xPct * 100}%`,
                     top: `${m.anchor.point.yPct * 100}%`,

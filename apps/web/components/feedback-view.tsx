@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Anchor, OwnerMoveRequest } from '@ft/shared';
+import type { Anchor, OwnerMoveRequest, Tone } from '@ft/shared';
+import { TONE, TONE_ORDER } from '@/lib/tone-style';
 import { PdfViewer, type PdfMarker } from './pdf-viewer';
 import { SiteViewer, type LocateMethod, type SiteFocus, type SiteMarker } from './site-viewer';
 import { ScreenshotViewer, type ShotMarker } from './screenshot-viewer';
@@ -21,6 +22,8 @@ type Comment = {
   span_start_ms: number | null;
   span_end_ms: number | null;
   transcript_original: string | null;
+  /** Owner-facing tone (AI or owner); null until labelled. */
+  tone: Tone | null;
   /** Signed URL of the page screenshot taken at submit (websites), if any. */
   screenshot_url: string | null;
 };
@@ -46,6 +49,7 @@ export function FeedbackView(p: {
 }) {
   const [comments, setComments] = useState(p.comments);
   const [filter, setFilter] = useState<string>('all');
+  const [toneFilter, setToneFilter] = useState<Tone | 'all'>('all');
   const [active, setActive] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,25 +60,45 @@ export function FeedbackView(p: {
   const art = p.artifact;
   const names = useMemo(() => new Map(p.reviewers.map((r) => [r.id, r.name])), [p.reviewers]);
 
-  const visible = comments.filter((c) => filter === 'all' || c.invite_id === filter);
+  const visible = comments.filter(
+    (c) =>
+      (filter === 'all' || c.invite_id === filter) &&
+      (toneFilter === 'all' || c.tone === toneFilter),
+  );
   const pinned = visible.filter((c) => !c.general && c.anchor);
   const general = visible.filter((c) => c.general);
   const number = new Map(pinned.map((c, i) => [c.id, i + 1]));
   const markers: PdfMarker[] = pinned.flatMap((c) =>
     c.anchor?.kind === 'pdf'
-      ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor, active: c.id === active }]
+      ? [
+          {
+            id: c.id,
+            n: number.get(c.id)!,
+            anchor: c.anchor,
+            active: c.id === active,
+            tone: c.tone,
+          },
+        ]
       : [],
   );
 
   const siteMarkers: SiteMarker[] = pinned.flatMap((c) =>
     c.anchor?.kind === 'dom' || c.anchor?.kind === 'viewport'
-      ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor }]
+      ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor, tone: c.tone }]
       : [],
   );
 
   const shotMarkers: ShotMarker[] = pinned.flatMap((c) =>
     c.anchor?.kind === 'screenshot'
-      ? [{ id: c.id, n: number.get(c.id)!, anchor: c.anchor, active: c.id === active }]
+      ? [
+          {
+            id: c.id,
+            n: number.get(c.id)!,
+            anchor: c.anchor,
+            active: c.id === active,
+            tone: c.tone,
+          },
+        ]
       : [],
   );
 
@@ -154,6 +178,24 @@ export function FeedbackView(p: {
     );
   }
 
+  /** Owner corrects the tone: Action → Praise → Note → Action. Optimistic; reverted on failure. */
+  async function cycleTone(c: Comment) {
+    setError(null);
+    const next = TONE_ORDER[(TONE_ORDER.indexOf(c.tone ?? 'note') + 1) % TONE_ORDER.length]!;
+    const set = (t: Tone | null) =>
+      setComments((l) => l.map((x) => (x.id === c.id ? { ...x, tone: t } : x)));
+    set(next);
+    const res = await fetch(`/api/reviews/${p.reviewId}/comments/${c.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tone: next }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      set(c.tone);
+      setError('That didn’t save. Check your connection and try again.');
+    }
+  }
+
   /** A marker on the artifact was clicked: select its comment in the list. */
   function showInList(id: string) {
     setActive(id);
@@ -231,7 +273,9 @@ export function FeedbackView(p: {
       <button className="block w-full text-left" onClick={() => c.anchor && goTo(c.id)}>
         <span className="flex items-center gap-2 text-xs text-muted">
           {number.has(c.id) && (
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-white">
+            <span
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold text-white ${c.tone ? TONE[c.tone].dot : 'bg-ink'}`}
+            >
               {number.get(c.id)}
             </span>
           )}
@@ -257,6 +301,18 @@ export function FeedbackView(p: {
           {c.text}
         </span>
       </button>
+      {c.tone && (
+        <button
+          type="button"
+          onClick={() => void cycleTone(c)}
+          className={`mt-2 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${TONE[c.tone].chip}`}
+          aria-label={`Tone: ${TONE[c.tone].label}. Change`}
+          title="Click to change"
+          data-testid="tone"
+        >
+          {TONE[c.tone].label}
+        </button>
+      )}
       {c.transcript_original && norm(c.transcript_original) !== norm(c.text) && (
         <details className="mt-1 text-xs text-muted">
           <summary className="cursor-pointer">Original transcript</summary>
@@ -316,6 +372,19 @@ export function FeedbackView(p: {
               ))}
             </select>
           </label>
+        )}
+        {comments.some((c) => c.tone) && (
+          <select
+            value={toneFilter}
+            onChange={(e) => setToneFilter(e.target.value as Tone | 'all')}
+            className="w-full rounded-md border border-line bg-white p-1.5 text-sm"
+            aria-label="Filter by tone"
+          >
+            <option value="all">All feedback</option>
+            <option value="action">Action only (red)</option>
+            <option value="praise">Praise only (green)</option>
+            <option value="note">Notes only (blue)</option>
+          </select>
         )}
         {error && (
           <p role="alert" className="text-xs text-red-700">

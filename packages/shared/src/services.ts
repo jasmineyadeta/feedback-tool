@@ -39,6 +39,12 @@ export interface AnchorResolver {
   resolve(input: ResolverSegmentInput): Promise<unknown>;
 }
 
+/** Tone of each comment for the owner (action / praise / note). Raw output; the caller validates. */
+export interface ToneClassifier {
+  readonly name: string;
+  classify(items: { id: string; text: string }[]): Promise<unknown>;
+}
+
 export interface ScreenshotService {
   readonly name: string;
   /** Full-page PNG of a (proxied) URL at a viewport width. */

@@ -56,3 +56,7 @@ The agent can open pages in the Simulator but can't tap or talk in it. Left for 
 ## Recorded comments go straight to the list (2026-11-06)
 - [ ] Record, then **Stop**. On the laptop and on the phone (Simulator is fine).
   - Good: no extra screen. The new comments appear highlighted in **Your comments** (the list opens on a phone). **Edit** keeps the "Tapped"/"Auto-placed" label; **Move** then tapping a new spot moves it; **Merge with previous** joins two recorded comments.
+
+## Tone colours (2026-11-06)
+- [ ] Submit a review with a mix of praise and criticism, then open **Feedback** (refresh after a few seconds).
+  - Good: criticism and suggestions are red **Action**, compliments green **Praise**, narration blue **Note**; numbers on the page match. **Filter by tone → Action only** leaves your to-do list. Clicking a label changes it and it stays changed after a refresh.

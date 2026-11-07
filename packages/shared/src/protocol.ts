@@ -1,5 +1,5 @@
 import * as z from 'zod/mini';
-import { Anchor } from './anchor';
+import { Anchor, Tone } from './anchor';
 import { TimelineSnapshot, TimelineTap } from './timeline';
 
 /**
@@ -64,7 +64,9 @@ export const ShellToOverlay = z.discriminatedUnion('type', [
   z.object({
     ...base,
     type: z.literal('markers:set'),
-    markers: z.array(z.object({ anchor: Anchor, label: str(8) })).check(z.maxLength(60)),
+    markers: z
+      .array(z.object({ anchor: Anchor, label: str(8), tone: z.optional(Tone) }))
+      .check(z.maxLength(60)),
   }),
 ]);
 export type ShellToOverlay = z.infer<typeof ShellToOverlay>;

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PDFDocumentProxy, PDFPageProxy, PageViewport, RenderTask } from 'pdfjs-dist';
-import type { PdfAnchor } from '@ft/shared';
+import type { PdfAnchor, Tone } from '@ft/shared';
+import { TONE } from '@/lib/tone-style';
 
 /**
  * pdf.js viewer (SPEC §4.2): lazy page rendering, zoom, selectable text layer, numbered markers.
@@ -14,6 +15,7 @@ export type PdfMarker = {
   anchor: PdfAnchor;
   active?: boolean;
   label?: string;
+  tone?: Tone | null;
 };
 
 type Props = {
@@ -344,7 +346,7 @@ function PdfPage(
                   e.stopPropagation();
                   onMarker?.(m.id);
                 }}
-                className={`absolute z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-xs font-semibold text-white shadow ring-2 ring-white ${m.active ? 'animate-pulse bg-accent' : 'bg-ink'}`}
+                className={`absolute z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-xs font-semibold text-white shadow ring-2 ring-white ${m.active ? 'animate-pulse bg-accent' : m.tone ? TONE[m.tone].dot : 'bg-ink'}`}
                 style={{
                   left: `${m.anchor.point.xPct * 100}%`,
                   top: `${m.anchor.point.yPct * 100}%`,

@@ -110,5 +110,14 @@ export const Anchor = z.discriminatedUnion('kind', [
 ]);
 export type Anchor = z.infer<typeof Anchor>;
 
+/** Owner-facing tone of a comment: red = action, green = praise, blue = note (neutral). */
+export const Tone = z.enum(['action', 'praise', 'note']);
+export type Tone = z.infer<typeof Tone>;
+export const ToneOutput = z.object({
+  items: z
+    .array(z.object({ id: z.string().check(z.maxLength(64)), tone: Tone }))
+    .check(z.maxLength(100)),
+});
+
 export const AnchorSource = z.enum(['tap', 'ai', 'viewport', 'manual', 'owner_moved']);
 export type AnchorSource = z.infer<typeof AnchorSource>;

@@ -1,13 +1,20 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { Anchor, DomAnchor, TimelineSnapshot, TimelineTap, ViewportAnchor } from '@ft/shared';
+import type {
+  Anchor,
+  DomAnchor,
+  TimelineSnapshot,
+  TimelineTap,
+  Tone,
+  ViewportAnchor,
+} from '@ft/shared';
 import { parseOverlayMessage, type ShellToOverlay } from '@ft/shared/protocol';
 import { enterAt } from '@/lib/artifact';
 
 type ToOverlay = DistOmit<ShellToOverlay>;
 type DistOmit<T> = T extends unknown ? Omit<T, 'ft'> : never;
 
-export type SiteMarker = { id: string; n: number; anchor: Anchor };
+export type SiteMarker = { id: string; n: number; anchor: Anchor; tone?: Tone | null };
 export type SiteFocus = { anchor: Anchor; label: string; seq: number };
 export type SiteMode = 'browse' | 'pick' | 'record';
 export type LocateMethod = 'textQuote' | 'cssPath' | 'rect' | 'none';
@@ -128,7 +135,7 @@ export function SiteViewer(p: {
   }, [p.mode]);
 
   // Markers.
-  const markerKey = JSON.stringify(p.markers.map((m) => [m.id, m.n]));
+  const markerKey = JSON.stringify(p.markers.map((m) => [m.id, m.n, m.tone]));
   useEffect(() => {
     if (path) send({ type: 'markers:set', markers: markersFor(p.markers, path) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,5 +195,5 @@ function markersFor(markers: SiteMarker[], path: string) {
         (m.anchor.kind === 'dom' || m.anchor.kind === 'viewport') && m.anchor.pagePath === path,
     )
     .slice(0, 60)
-    .map((m) => ({ anchor: m.anchor, label: String(m.n) }));
+    .map((m) => ({ anchor: m.anchor, label: String(m.n), ...(m.tone ? { tone: m.tone } : {}) }));
 }

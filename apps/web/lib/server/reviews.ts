@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { LIMITS, type Anchor } from '@ft/shared';
+import { LIMITS, type Anchor, type Tone } from '@ft/shared';
 import { adminClient, userClient, viaApp } from './supabase';
 import { validatePdf } from './pdf';
 import { env } from './env';
@@ -364,6 +364,7 @@ export type FeedbackComment = {
   span_start_ms: number | null;
   span_end_ms: number | null;
   transcript_original: string | null;
+  tone: Tone | null;
 };
 export type FeedbackReviewer = { id: string; name: string; submitted_at: string };
 
@@ -374,7 +375,7 @@ export async function listFeedback(reviewId: string) {
     sb
       .from('comments')
       .select(
-        'id,invite_id,text,anchor,anchor_source,general,addressed_at,created_at,sort_key,recording_id,span_start_ms,span_end_ms,transcript_original,page_path,screenshot_file_key',
+        'id,invite_id,text,anchor,anchor_source,general,addressed_at,created_at,sort_key,recording_id,span_start_ms,span_end_ms,transcript_original,page_path,screenshot_file_key,tone',
       )
       .eq('review_id', reviewId)
       .eq('state', 'saved')
@@ -394,6 +395,20 @@ export async function listFeedback(reviewId: string) {
     submitted_at: i.submitted_at as string,
   }));
   return { comments: (comments ?? []) as FeedbackComment[], reviewers };
+}
+
+/** Owner corrects a comment's tone (RLS + column grant: owners only, tone columns only). */
+export async function setTone(reviewId: string, commentId: string, tone: Tone) {
+  if (!isUuid(commentId)) return null;
+  const sb = await userClient();
+  const { data, error } = await sb
+    .from('comments')
+    .update({ tone, tone_source: 'owner' })
+    .eq('id', commentId)
+    .eq('review_id', reviewId)
+    .select('id,tone');
+  if (error) throw error;
+  return (data?.[0] as { id: string; tone: Tone } | undefined) ?? null;
 }
 
 export async function setAddressed(commentId: string, addressed: boolean) {

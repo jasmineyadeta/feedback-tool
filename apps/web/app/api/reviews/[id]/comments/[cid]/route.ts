@@ -1,13 +1,17 @@
 import { z } from 'zod';
-import { OwnerMoveRequest } from '@ft/shared';
+import { OwnerMoveRequest, Tone } from '@ft/shared';
 import { currentUser } from '@/lib/server/supabase';
 import { notFound, ok, parseJson, unauthorized } from '@/lib/server/http';
-import { getReview, setAddressed } from '@/lib/server/reviews';
+import { getReview, setAddressed, setTone } from '@/lib/server/reviews';
 import { moveAnchor } from '@/lib/server/owner-move';
 import { logEvent } from '@/lib/server/events';
 import { handle } from '@/lib/server/route';
 
-const Patch = z.union([z.object({ addressed: z.boolean() }), OwnerMoveRequest]);
+const Patch = z.union([
+  z.object({ addressed: z.boolean() }),
+  OwnerMoveRequest,
+  z.object({ tone: Tone }),
+]);
 type Ctx = { params: Promise<{ id: string; cid: string }> };
 
 /**
@@ -22,6 +26,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (!review) return notFound();
     const p = await parseJson(req, Patch);
     if (!p.ok) return p.res;
+    if ('tone' in p.data) {
+      const row = await setTone(review.id, cid, p.data.tone);
+      return row ? ok(row) : notFound();
+    }
     if ('anchor' in p.data) {
       const moved = await moveAnchor(review, cid, p.data.anchor);
       return moved ? ok(moved) : notFound();

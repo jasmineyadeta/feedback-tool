@@ -5,7 +5,10 @@
  * - Capture mode (recording) and pick mode (typed comment): taps become anchors, site clicks suppressed.
  */
 import { parseShellMessage, type OverlayToShell, type ShellToOverlay } from '@ft/shared/protocol';
-import type { Anchor, DomAnchor, ViewportAnchor } from '@ft/shared/anchor';
+import type { Anchor, DomAnchor, Tone, ViewportAnchor } from '@ft/shared/anchor';
+
+/** Owner-facing tone colours (match apps/web/lib/tone-style.ts). */
+const TONE_HEX: Record<Tone, string> = { action: '#c62828', praise: '#2e7d32', note: '#2f5bd3' };
 import type { TimelineSnapshot, VisibleElement } from '@ft/shared/timeline';
 import {
   buildDomAnchor,
@@ -300,7 +303,7 @@ function ui(): ShadowRoot {
     .pulse{animation:p 1.2s ease-out 2}
     @keyframes p{0%{box-shadow:0 0 0 0 rgba(47,91,211,.6)}100%{box-shadow:0 0 0 14px rgba(47,91,211,0)}}
     .num{position:absolute;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#2f5bd3;color:#fff;font:600 12px/22px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.45);transition:transform .2s,background .2s}
-    .num.active{background:#1c1f23;transform:scale(1.2)}
+    .num.active{background:#1c1f23!important;transform:scale(1.2)}
     .click{pointer-events:auto;cursor:pointer}
     .click:focus-visible{outline:2px solid #1c1f23;outline-offset:2px}
     .band{position:absolute;width:6px;border-radius:3px;background:rgba(47,91,211,.6);box-shadow:0 0 0 1px rgba(255,255,255,.8)}
@@ -311,13 +314,13 @@ function ui(): ShadowRoot {
   return root;
 }
 type Box = { x: number; y: number; w: number; h: number };
-function badge(label: string, x: number, y: number, cls: string, clickable: boolean) {
+function badge(label: string, x: number, y: number, cls: string, clickable: boolean, tone?: Tone) {
   const num = document.createElement('div');
   num.className = `num ${cls}`;
   num.textContent = label;
   num.setAttribute('aria-label', `Comment ${label}`);
   num.dataset.label = label;
-  num.style.cssText = `left:${x}px;top:${y}px`;
+  num.style.cssText = `left:${x}px;top:${y}px${tone ? `;background:${TONE_HEX[tone]}` : ''}`;
   if (clickable) {
     // Clicking a number on the page selects that comment in the list.
     num.classList.add('click');
@@ -329,12 +332,12 @@ function badge(label: string, x: number, y: number, cls: string, clickable: bool
   }
   return num;
 }
-function rectBox(r: Box, label: string, cls = '', clickable = false) {
+function rectBox(r: Box, label: string, cls = '', clickable = false, tone?: Tone) {
   const s = ui();
   const box = document.createElement('div');
   box.className = `box ${cls}`;
-  box.style.cssText = `left:${r.x - 3}px;top:${r.y - 3}px;width:${r.w + 6}px;height:${r.h + 6}px`;
-  const num = badge(label, r.x - 11, r.y - 11, cls, clickable);
+  box.style.cssText = `left:${r.x - 3}px;top:${r.y - 3}px;width:${r.w + 6}px;height:${r.h + 6}px${tone ? `;border-color:${TONE_HEX[tone]}` : ''}`;
+  const num = badge(label, r.x - 11, r.y - 11, cls, clickable, tone);
   s.append(box, num);
   return [box, num];
 }
@@ -358,12 +361,17 @@ function viewportArea(a: ViewportAnchor): { y: number; h: number; el: Element | 
  * mid-screen, or at the middle of what the reviewer was looking at. Pins never overlap.
  */
 let usedBadgeYs: number[] = [];
-function pin(area: { y: number; h: number; el: Element | null }, label: string, cls = '') {
+function pin(
+  area: { y: number; h: number; el: Element | null },
+  label: string,
+  cls = '',
+  tone?: Tone,
+) {
   const right = document.documentElement.clientWidth;
   let y = Math.max(6, area.el ? area.y : area.y + area.h / 2 - 11); // never above the page top
   while (usedBadgeYs.some((u) => Math.abs(u - y) < 26)) y += 26;
   usedBadgeYs.push(y);
-  const num = badge(label, right - 40, y, cls, true);
+  const num = badge(label, right - 40, y, cls, true, tone);
   ui().append(num);
   return num;
 }
@@ -392,16 +400,16 @@ function clearMarks(only = '') {
   if (!only) usedBadgeYs = [];
 }
 
-let markers: { anchor: Anchor; label: string }[] = [];
+let markers: { anchor: Anchor; label: string; tone?: Tone }[] = [];
 function drawMarkers() {
   clearMarks();
   for (const m of markers) {
     if (m.anchor.kind === 'dom' && m.anchor.pagePath === location.pathname) {
       const r = locate(m.anchor, document);
       if (r.method === 'textQuote' || r.method === 'cssPath')
-        rectBox(docRect(r.element), m.label, '', true);
+        rectBox(docRect(r.element), m.label, '', true, m.tone);
     } else if (m.anchor.kind === 'viewport' && m.anchor.pagePath === location.pathname) {
-      pin(viewportArea(m.anchor), m.label);
+      pin(viewportArea(m.anchor), m.label, '', m.tone);
     }
   }
 }
