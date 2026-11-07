@@ -29,6 +29,16 @@ test('while recording, tapping the same thing again takes the tap back; reviewer
   await heading.click(); // same thing again → the tap is gone
   await expect(site.locator('.num')).toHaveCount(0);
 
+  // Undoing a middle tap renumbers the rest: 1, 2, 3 → undo 2 → 1, 2.
+  const nav = site.getByText(/Led a team shipping/);
+  const targets = [heading, site.getByRole('heading', { name: 'Highlights' }), nav];
+  for (const t of targets) await t.click({ position: { x: 5, y: 5 } });
+  await expect(site.locator('.num')).toHaveText(['1', '2', '3']);
+  await targets[1]!.click({ position: { x: 5, y: 5 } });
+  await expect(site.locator('.num')).toHaveText(['1', '2']);
+  for (const t of [heading, nav]) await t.click({ position: { x: 5, y: 5 } }); // clear them again
+  await expect(site.locator('.num')).toHaveCount(0);
+
   // Words the (mock) AI can't place on anything → one "On screen" comment, not "Tapped".
   await setScript(page, { text: 'lovely calm colours overall nice style' });
   await page.getByRole('button', { name: 'Stop' }).click();

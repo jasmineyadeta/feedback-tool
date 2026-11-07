@@ -199,6 +199,17 @@ function anchorElement(el: Element, x: number, y: number) {
   if (again) {
     again.forEach((n) => n.remove());
     tapped.delete(el);
+    // Renumber the remaining taps 1, 2, 3… in the order they were made.
+    let n = 0;
+    for (const nodes of tapped.values()) {
+      const num = nodes[1];
+      if (!num) continue;
+      const label = String(++n);
+      num.textContent = label;
+      num.setAttribute('aria-label', `Comment ${label}`);
+      (num as HTMLElement).dataset.label = label;
+    }
+    tapCount = n;
     post({ ft: 1, type: 'tap:undo', eid: eidOf(el) });
     return;
   }
