@@ -104,10 +104,16 @@ export function snapshotPdf(scroller: HTMLElement, t: number): TimelineSnapshot 
     });
   }
   const page = Number(current.dataset.page);
+  const cr = current.getBoundingClientRect();
   const viewportAnchor: PdfPageAnchor = {
     kind: 'pdf-page',
     page,
     visibleTextSample: sample.join(' ').slice(0, 300),
+    // What part of the page was on screen, as fractions (independent of zoom and screen size).
+    region: {
+      top: clamp01((view.top - cr.top) / cr.height),
+      bottom: clamp01((view.bottom - cr.top) / cr.height),
+    },
   };
   return {
     t: Math.max(0, Math.round(t)),

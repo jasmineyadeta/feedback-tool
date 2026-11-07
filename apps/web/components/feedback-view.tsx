@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Anchor, OwnerMoveRequest, Tone } from '@ft/shared';
 import { TONE, TONE_ORDER } from '@/lib/tone-style';
-import { PdfViewer, type PdfMarker } from './pdf-viewer';
+import { PdfViewer, type PdfArea, type PdfMarker } from './pdf-viewer';
 import { SiteViewer, type LocateMethod, type SiteFocus, type SiteMarker } from './site-viewer';
 import { ScreenshotViewer, type ShotMarker } from './screenshot-viewer';
 import { btn } from './ui';
@@ -75,6 +75,21 @@ export function FeedbackView(p: {
             id: c.id,
             n: number.get(c.id)!,
             anchor: c.anchor,
+            active: c.id === active,
+            tone: c.tone,
+          },
+        ]
+      : [],
+  );
+
+  const areas: PdfArea[] = pinned.flatMap((c) =>
+    c.anchor?.kind === 'pdf-page'
+      ? [
+          {
+            id: c.id,
+            n: number.get(c.id)!,
+            page: c.anchor.page,
+            region: c.anchor.region ?? null,
             active: c.id === active,
             tone: c.tone,
           },
@@ -167,12 +182,9 @@ export function FeedbackView(p: {
       return;
     }
     requestAnimationFrame(() =>
-      (c?.anchor?.kind === 'pdf-page'
-        ? document.querySelector(`[data-page="${c.anchor.page}"]`)
-        : document.getElementById(`marker-${id}`)
-      )?.scrollIntoView({
+      document.getElementById(`marker-${id}`)?.scrollIntoView({
         behavior: 'smooth',
-        block: c?.anchor?.kind === 'pdf-page' ? 'start' : 'center',
+        block: 'center',
         inline: 'center',
       }),
     );
@@ -461,6 +473,7 @@ export function FeedbackView(p: {
               url={art.url}
               pageCount={art.pageCount}
               markers={markers}
+              areas={areas}
               picking={!!moving}
               onPick={(a) => void move(a)}
               onMarker={showInList}

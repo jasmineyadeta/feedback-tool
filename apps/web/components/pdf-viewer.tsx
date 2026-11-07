@@ -18,10 +18,21 @@ export type PdfMarker = {
   tone?: Tone | null;
 };
 
+/** A comment about the part of a page that was on screen: a pin on the page's right edge. */
+export type PdfArea = {
+  id: string;
+  n: number;
+  page: number;
+  region: { top: number; bottom: number } | null;
+  active?: boolean;
+  tone?: Tone | null;
+};
+
 type Props = {
   url: string | (() => Promise<string>);
   pageCount: number;
   markers: PdfMarker[];
+  areas?: PdfArea[];
   picking: boolean;
   onPick: (a: PdfAnchor) => void;
   onSelection?: (a: PdfAnchor | null) => void;
@@ -357,8 +368,53 @@ function PdfPage(
             </div>
           );
         })}
+      {stackAreas((p.areas ?? []).filter((a) => a.page === n)).map(({ a, bump }) => {
+        const r = a.region ?? { top: 0, bottom: 0.25 };
+        const mid = (r.top + r.bottom) / 2;
+        const color = a.tone ? TONE[a.tone].dot : 'bg-accent';
+        return (
+          <div key={`area-${a.id}`}>
+            {a.active && (
+              <div
+                aria-hidden
+                data-testid="pdf-area-band"
+                className={`pointer-events-none absolute right-1 w-2 rounded-full opacity-80 ring-1 ring-white ${color}`}
+                style={{
+                  top: `${r.top * 100}%`,
+                  height: `${Math.max(0.04, r.bottom - r.top) * 100}%`,
+                }}
+              />
+            )}
+            <button
+              id={`marker-${a.id}`}
+              data-marker
+              type="button"
+              aria-label={`Comment ${a.n}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarker?.(a.id);
+              }}
+              className={`absolute right-5 z-10 flex h-7 min-w-7 -translate-y-1/2 items-center justify-center rounded-full px-1.5 text-xs font-semibold text-white shadow ring-2 ring-white transition-transform ${color} ${a.active ? 'scale-125 animate-pulse' : ''}`}
+              style={{ top: `calc(${mid * 100}% + ${bump * 30}px)` }}
+            >
+              {a.n}
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
+}
+
+/** Pins whose spots are within 4% of page height of each other stack downwards instead of overlapping. */
+function stackAreas(areas: PdfArea[]) {
+  const mid = (a: PdfArea) => (a.region ? (a.region.top + a.region.bottom) / 2 : 0.125);
+  const out: { a: PdfArea; bump: number }[] = [];
+  for (const a of [...areas].sort((x, y) => mid(x) - mid(y))) {
+    const prev = out[out.length - 1];
+    out.push({ a, bump: prev && mid(a) - mid(prev.a) < 0.04 ? prev.bump + 1 : 0 });
+  }
+  return out;
 }
 
 /** Build a quote anchor from the current text selection, if it lies inside this page. */

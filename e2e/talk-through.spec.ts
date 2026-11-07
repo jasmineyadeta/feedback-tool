@@ -281,3 +281,28 @@ test('PDF: tapping a tap number while recording takes that tap back', async ({ b
   await expect(page.getByRole('button', { name: /^Tap \d$/ })).toHaveCount(1);
   await s.owner.context().close();
 });
+
+test('PDF: untapped talk is pinned to the part of the page on screen; opening it shows the area', async ({
+  browser,
+  page,
+}, info) => {
+  await fakeMic(page);
+  const s = await setup(browser, page);
+  await startRecording(page);
+  await page.waitForTimeout(1500); // a few snapshots of what's on screen
+  await setScript(page, { text: 'lovely calm colours overall nice style' });
+  await page.getByRole('button', { name: 'Stop' }).click();
+  const card = page.getByTestId('reviewer-comment');
+  await expect(card).toContainText('On screen', { timeout: 15000 });
+  await closeList(page);
+
+  const pin = page.getByRole('button', { name: 'Comment 1' });
+  await expect(pin).toBeVisible();
+  await expect(page.getByTestId('pdf-area-band')).toHaveCount(0); // just the pin until opened
+  if (await page.getByRole('button', { name: /^Comments \(/ }).isVisible())
+    await page.getByRole('button', { name: /^Comments \(/ }).click();
+  await card.getByRole('button').first().click();
+  await expect(page.getByTestId('pdf-area-band')).toHaveCount(1);
+  await page.screenshot({ path: `test-results/shots/pdf-area-${info.project.name}.png` });
+  await s.owner.context().close();
+});

@@ -98,6 +98,10 @@ export const PdfPageAnchor = z.object({
   kind: z.literal('pdf-page'),
   page: z.int().check(z.gte(1), z.lte(30)),
   visibleTextSample: z._default(str(300), ''),
+  /** The part of the page that was on screen (fractions of page height). Absent on older comments. */
+  region: z.optional(
+    z.object({ top: num().check(z.gte(0), z.lte(1)), bottom: num().check(z.gte(0), z.lte(1)) }),
+  ),
 });
 export type PdfPageAnchor = z.infer<typeof PdfPageAnchor>;
 

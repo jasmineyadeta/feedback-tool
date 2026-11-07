@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { GENERAL_NOTE_ID, LIMITS, type CommentDraft, type PdfAnchor } from '@ft/shared';
-import { PdfViewer, type PdfMarker } from './pdf-viewer';
+import { PdfViewer, type PdfArea, type PdfMarker } from './pdf-viewer';
 import { SiteViewer, type SiteFocus, type SiteMarker } from './site-viewer';
 import { ScreenshotViewer, type ShotMarker } from './screenshot-viewer';
 import { anchorLabel, quoteOf, type ReviewerArtifact } from '@/lib/artifact';
@@ -177,6 +177,19 @@ export function ReviewerApp(p: Props) {
   const markers: PdfMarker[] = list.flatMap((c, i) =>
     c.anchor?.kind === 'pdf'
       ? [{ id: c.clientId, n: i + 1, anchor: c.anchor, active: c.clientId === active }]
+      : [],
+  );
+  const areas: PdfArea[] = list.flatMap((c, i) =>
+    c.anchor?.kind === 'pdf-page'
+      ? [
+          {
+            id: c.clientId,
+            n: i + 1,
+            page: c.anchor.page,
+            region: c.anchor.region ?? null,
+            active: c.clientId === active,
+          },
+        ]
       : [],
   );
   const siteMarkers: SiteMarker[] = list.flatMap((c, i) =>
@@ -472,6 +485,7 @@ export function ReviewerApp(p: Props) {
               url={art.url}
               pageCount={art.pageCount}
               markers={recording ? [...markers, ...tapMarkers] : markers}
+              areas={areas}
               picking={picking || recording || reanchoring}
               onPick={(anchor) => {
                 if (recording) return tt.tap(anchor);

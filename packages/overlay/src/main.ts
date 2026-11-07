@@ -303,10 +303,10 @@ function ui(): ShadowRoot {
     .pulse{animation:p 1.2s ease-out 2}
     @keyframes p{0%{box-shadow:0 0 0 0 rgba(47,91,211,.6)}100%{box-shadow:0 0 0 14px rgba(47,91,211,0)}}
     .num{position:absolute;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#2f5bd3;color:#fff;font:600 12px/22px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.45);transition:transform .2s,background .2s}
-    .num.active{background:#1c1f23!important;transform:scale(1.2)}
+    .num.active{transform:scale(1.3);box-shadow:0 0 0 3px #fff,0 0 0 7px rgba(28,31,35,.35),0 2px 6px rgba(0,0,0,.5);z-index:1}
     .click{pointer-events:auto;cursor:pointer}
     .click:focus-visible{outline:2px solid #1c1f23;outline-offset:2px}
-    .band{position:absolute;width:6px;border-radius:3px;background:rgba(47,91,211,.6);box-shadow:0 0 0 1px rgba(255,255,255,.8)}
+    .band{position:absolute;width:8px;border-radius:4px;background:#2f5bd3;opacity:.85;box-shadow:0 0 0 2px #fff}
     .band.pulse{animation:b 1.2s ease-out 2}
     @keyframes b{0%{box-shadow:0 0 0 0 rgba(47,91,211,.6)}100%{box-shadow:0 0 0 10px rgba(47,91,211,0)}}
     .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#1c1f23;color:#fff;font:14px system-ui,sans-serif;padding:8px 12px;border-radius:6px}`;
@@ -377,9 +377,10 @@ function pin(
 }
 /** The comment you opened: a band showing the area it was about, and its pin highlighted. */
 function showArea(area: { y: number; h: number }, label: string) {
+  const tone = markers.find((m) => m.label === label)?.tone;
   const b = document.createElement('div');
   b.className = 'band pulse focus';
-  b.style.cssText = `left:${document.documentElement.clientWidth - 10}px;top:${area.y}px;height:${area.h}px`;
+  b.style.cssText = `left:${document.documentElement.clientWidth - 12}px;top:${area.y}px;height:${area.h}px${tone ? `;background:${TONE_HEX[tone]}` : ''}`;
   ui().append(b);
   const existing = root?.querySelector<HTMLElement>(`.num[data-label="${CSS.escape(label)}"]`);
   if (existing) existing.classList.add('active');
