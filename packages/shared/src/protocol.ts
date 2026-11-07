@@ -25,6 +25,8 @@ export const OverlayToShell = z.discriminatedUnion('type', [
   }),
   z.object({ ...base, type: z.literal('timeline'), snapshot: TimelineSnapshot }),
   z.object({ ...base, type: z.literal('tap'), tap: TimelineTap }),
+  /** The reviewer tapped the same thing again while recording: take that tap back. */
+  z.object({ ...base, type: z.literal('tap:undo'), eid: str(40) }),
   z.object({ ...base, type: z.literal('anchor:picked'), anchor: Anchor }),
   z.object({
     ...base,

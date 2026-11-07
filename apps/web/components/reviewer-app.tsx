@@ -180,7 +180,9 @@ export function ReviewerApp(p: Props) {
       : [],
   );
   const siteMarkers: SiteMarker[] = list.flatMap((c, i) =>
-    c.anchor?.kind === 'dom' ? [{ id: c.clientId, n: i + 1, anchor: c.anchor }] : [],
+    c.anchor?.kind === 'dom' || c.anchor?.kind === 'viewport'
+      ? [{ id: c.clientId, n: i + 1, anchor: c.anchor }]
+      : [],
   );
   const shotMarkers: ShotMarker[] = list.flatMap((c, i) =>
     c.anchor?.kind === 'screenshot'
@@ -453,6 +455,11 @@ export function ReviewerApp(p: Props) {
               }
               focus={focus}
               onTap={(t) => tt.tap(t.fullAnchor, t.eid)}
+              onUntap={(eid) => tt.untap((t) => t.eid === eid)}
+              onMarker={(id) => {
+                setActive(id);
+                setListOpen(true);
+              }}
               onSnapshot={tt.pushSnapshot}
               onPick={(anchor) => {
                 if (reanchoring) return tt.setReanchor({ clientId: tt.reanchor!.clientId, anchor });
@@ -474,6 +481,8 @@ export function ReviewerApp(p: Props) {
               }}
               onSelection={readOnly ? undefined : setSelection}
               onMarker={(id) => {
+                const tapIndex = /^tap-(\d+)$/.exec(id);
+                if (tapIndex) return tt.untap((_t, i) => i === Number(tapIndex[1]));
                 setActive(id);
                 setListOpen(true);
               }}

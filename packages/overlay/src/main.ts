@@ -112,6 +112,8 @@ let mode: Mode = 'browse';
 let baseline = 0; // shell's performance.now() at rec start, mapped onto our clock
 let tick: number | undefined;
 let tapCount = 0;
+/** Taps in this recording, by element, so tapping the same thing again takes it back. */
+let tapped = new Map<Element, Element[]>();
 
 const eids = new WeakMap<Element, string>();
 let eidSeq = 0;
@@ -193,8 +195,15 @@ function anchorElement(el: Element, x: number, y: number) {
     setMode('browse');
     return;
   }
+  const again = tapped.get(el);
+  if (again) {
+    again.forEach((n) => n.remove());
+    tapped.delete(el);
+    post({ ft: 1, type: 'tap:undo', eid: eidOf(el) });
+    return;
+  }
   tapCount++;
-  flash(el, String(tapCount));
+  tapped.set(el, rectBox(docRect(el), String(tapCount)));
   post({ ft: 1, type: 'tap', tap: { t: now(), eid: eidOf(el), fullAnchor: anchor } });
 }
 
@@ -442,6 +451,7 @@ window.addEventListener('message', (e: MessageEvent) => {
     case 'rec:start':
       baseline = Date.now(); // frames have different performance clocks; message latency is ~ms
       tapCount = 0;
+      tapped = new Map();
       setMode('record');
       break;
     case 'rec:stop':

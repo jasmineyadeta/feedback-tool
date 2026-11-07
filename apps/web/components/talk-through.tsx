@@ -314,6 +314,12 @@ export function useTalkThrough(p: {
     setPaused(r.paused);
   }
 
+  /** Take a tap back: tapped the same thing again (website) or its number (PDF). */
+  function untap(match: (t: TimelineTap, i: number) => boolean) {
+    tapsRef.current = tapsRef.current.filter((t, i) => !match(t, i));
+    setTaps(tapsRef.current);
+  }
+
   function tap(anchor: Anchor, eid: string | null = null) {
     if (!rec.current || rec.current.paused) return;
     const t: TimelineTap = { t: rec.current.clock(), eid, fullAnchor: anchor };
@@ -338,6 +344,7 @@ export function useTalkThrough(p: {
     cancel,
     togglePause,
     tap,
+    untap,
     pushSnapshot,
   };
 }
@@ -358,9 +365,11 @@ export function RecordingBar({ tt }: { tt: TalkThrough }) {
       />
       <span className="tabular-nums">{fmt(tt.elapsed)}</span>
       <span className="hidden min-w-0 flex-1 truncate text-white/70 sm:inline">
-        {tt.paused ? 'Paused' : 'Talk, and tap things to point at them'}
+        {tt.paused ? 'Paused' : 'Talk, and tap things to point at them. Tap again to undo.'}
       </span>
-      <span className="flex-1 sm:hidden" />
+      <span className="min-w-0 flex-1 truncate text-xs text-white/70 sm:hidden">
+        {tt.paused ? '' : 'Tap again to undo'}
+      </span>
       <button className="rounded px-2 py-1 ring-1 ring-white/40" onClick={tt.togglePause}>
         {tt.paused ? 'Resume' : 'Pause'}
       </button>

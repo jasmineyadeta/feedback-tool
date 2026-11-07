@@ -269,3 +269,15 @@ test('list merge + move + edit; owner sees source, original transcript, and can 
   ).toBeVisible();
   await o.context().close();
 });
+
+test('PDF: tapping a tap number while recording takes that tap back', async ({ browser, page }) => {
+  await fakeMic(page);
+  const s = await setup(browser, page);
+  await startRecording(page);
+  await page.getByRole('region', { name: 'Page 1' }).click({ position: { x: 120, y: 140 } });
+  await page.getByRole('region', { name: 'Page 1' }).click({ position: { x: 120, y: 300 } });
+  await expect(page.getByRole('button', { name: /^Tap \d$/ })).toHaveCount(2);
+  await page.getByRole('button', { name: 'Tap 1' }).click();
+  await expect(page.getByRole('button', { name: /^Tap \d$/ })).toHaveCount(1);
+  await s.owner.context().close();
+});

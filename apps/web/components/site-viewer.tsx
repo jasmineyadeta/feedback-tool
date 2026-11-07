@@ -25,6 +25,7 @@ export function SiteViewer(p: {
   focus: SiteFocus | null;
   onPick: (anchor: DomAnchor | ViewportAnchor) => void;
   onTap?: (tap: TimelineTap) => void;
+  onUntap?: (eid: string) => void;
   onSnapshot?: (s: TimelineSnapshot) => void;
   onPath?: (path: string) => void;
   onLocated?: (method: LocateMethod) => void;
@@ -84,6 +85,9 @@ export function SiteViewer(p: {
           break;
         case 'tap':
           cur.onTap?.({ ...m.tap, eid: m.tap.eid && ns(m.tap.eid) });
+          break;
+        case 'tap:undo':
+          cur.onUntap?.(ns(m.eid));
           break;
         case 'timeline':
           cur.onSnapshot?.({
