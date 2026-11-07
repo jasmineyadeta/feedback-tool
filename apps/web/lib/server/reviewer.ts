@@ -203,7 +203,7 @@ async function mergeDraft(inviteId: string, from: string, into: string) {
     .in('client_id', [from, into]);
   const src = data?.find((r) => r.client_id === from);
   const dst = data?.find((r) => r.client_id === into);
-  if (!src || src.state !== 'draft') return;
+  if (!src) return; // drafts or saved comments: sync is refused once the review is submitted
   if (dst) {
     const num = (v: unknown) => (typeof v === 'number' ? v : null);
     const starts = [num(dst.span_start_ms), num(src.span_start_ms)].filter((v) => v !== null);
@@ -226,8 +226,7 @@ async function mergeDraft(inviteId: string, from: string, into: string) {
     .from('comments')
     .delete()
     .eq('invite_id', inviteId)
-    .eq('client_id', from)
-    .eq('state', 'draft');
+    .eq('client_id', from);
   if (error) throw error;
 }
 

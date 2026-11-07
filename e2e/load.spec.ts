@@ -47,11 +47,11 @@ test('10 concurrent reviewers complete a review without errors', async ({
 
       await startRecording(rev);
       await setScript(rev, { text: `the summary from reviewer ${i} could be shorter` });
-      await rev.getByRole('button', { name: 'Stop' }).click();
-      const preview = rev.getByRole('dialog', { name: 'Here’s what we heard' });
-      await expect(preview.getByTestId('proposed-comment')).toHaveCount(1, { timeout: 60_000 });
       const saved = rev.waitForResponse((r) => r.url().includes('/sync') && r.ok());
-      await preview.getByRole('button', { name: 'Looks good' }).click();
+      await rev.getByRole('button', { name: 'Stop' }).click();
+      await expect(
+        rev.getByTestId('reviewer-comment').filter({ hasText: `reviewer ${i} could be shorter` }),
+      ).toHaveCount(1, { timeout: 60_000 });
       await saved;
 
       await rev.getByRole('button', { name: 'Submit' }).click();

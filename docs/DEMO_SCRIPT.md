@@ -33,7 +33,7 @@ pnpm dev:phone
    - Tap **Record**, read the consent sheet (it links to the privacy notice), then **Start recording**.
    - Scroll and talk. Tap the parts you mean as you say "this" or "here".
    - On a website you can follow links to other pages while recording. **Pause** lets you use the site normally.
-   - Tap **Stop**. Wait for **Here's what we heard**, fix any words, delete what you don't want, then **Looks good**.
+   - Tap **Stop**. Within a few seconds the comments appear in **Your comments**, highlighted (on a phone the list opens). Use **Edit**, **Move**, **Merge with previous** or **Delete** on any of them.
 5. Optional: lock the phone or switch to airplane mode for a moment. Unsaved work is kept on the phone and sent when you're back.
 6. **Submit**: add a general note if you like, your name and email, **Submit**.
 

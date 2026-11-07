@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { admin, createInvite, createPdfReview, signInNewOwner } from './helpers/owner';
-import { fakeMic, setScript, startRecording, type Script } from './helpers/talk';
+import { closeList, fakeMic, setScript, startRecording, type Script } from './helpers/talk';
 
 /** Sentence 1 is said in the first half second; sentence 2 far later, so any tap after ~1 s splits
  *  exactly between them (tap split: first word with start ≥ tap − 0.3 s). */
@@ -33,7 +33,7 @@ async function setup(browser: Browser, page: Page) {
   return { owner, reviewId, inviteLink: link };
 }
 
-test('record, tap, stop → split preview → Looks good saves the comments', async ({
+test('record, tap, stop → the comments land in the list, split and saved', async ({
   browser,
   page,
 }, info) => {
@@ -52,22 +52,17 @@ test('record, tap, stop → split preview → Looks good saves the comments', as
   await page.screenshot({ path: `test-results/shots/recording-${info.project.name}.png` });
 
   await setScript(page, TWO_SENTENCES);
+  const saved = page.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
   await page.getByRole('button', { name: 'Stop' }).click();
-  const preview = page.getByRole('dialog', { name: 'Here’s what we heard' });
-  await expect(preview).toBeVisible({ timeout: 15000 });
-  const cards = preview.getByTestId('proposed-comment');
-  await expect(cards).toHaveCount(2);
+  const cards = page.getByTestId('reviewer-comment');
+  await expect(cards).toHaveCount(2, { timeout: 15000 });
+  await expect(page.getByText('Added 2 comments from your recording.')).toBeVisible();
   // The (mock) AI places the untapped sentence on the visible line sharing its words ("resume").
   await expect(cards.nth(0)).toContainText('Auto-placed');
-  await expect(cards.nth(0).getByRole('textbox')).toHaveValue(
-    'Overall this resume reads really clearly',
-  );
+  await expect(cards.nth(0)).toContainText('Overall this resume reads really clearly');
   await expect(cards.nth(1)).toContainText('Tapped');
-  await expect(cards.nth(1).getByRole('textbox')).toHaveValue('This heading needs a stronger verb');
-  await page.screenshot({ path: `test-results/shots/split-preview-${info.project.name}.png` });
-
-  const saved = page.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
-  await preview.getByRole('button', { name: 'Looks good' }).click();
+  await expect(cards.nth(1)).toContainText('This heading needs a stronger verb');
+  await page.screenshot({ path: `test-results/shots/recorded-list-${info.project.name}.png` });
   await saved;
   await expect(page.getByRole('button', { name: /^Comment \d$/ })).toHaveCount(2); // AI + tap
 
@@ -171,14 +166,15 @@ test('offline at stop: recording stays on the device and uploads when back onlin
     );
   expect(await stored()).toBe(1); // kept on the device until the server ACKs
   await context.setOffline(false);
-  const preview = page.getByRole('dialog', { name: 'Here’s what we heard' });
-  await expect(preview).toBeVisible({ timeout: 20000 });
-  await expect(preview.getByRole('textbox')).toHaveValue('The layout on this page feels crowded');
+  await expect(page.getByTestId('reviewer-comment')).toContainText(
+    'The layout on this page feels crowded',
+    { timeout: 20000 },
+  );
   expect(await stored()).toBe(0); // removed after the ACK
   await s.owner.context().close();
 });
 
-test('preview merge + re-anchor + edit; owner sees source, original transcript, and can play the clip', async ({
+test('list merge + move + edit; owner sees source, original transcript, and can play the clip', async ({
   browser,
   page,
 }, info) => {
@@ -189,33 +185,42 @@ test('preview merge + re-anchor + edit; owner sees source, original transcript, 
   await page.getByRole('region', { name: 'Page 1' }).click({ position: { x: 120, y: 140 } });
   await setScript(page, TWO_SENTENCES);
   await page.getByRole('button', { name: 'Stop' }).click();
-  const preview = page.getByRole('dialog', { name: 'Here’s what we heard' });
-  const cards = preview.getByTestId('proposed-comment');
+  const cards = page.getByTestId('reviewer-comment');
   await expect(cards).toHaveCount(2, { timeout: 15000 });
+  const openList = async () => {
+    const listOpen = await page.getByRole('button', { name: 'Close', exact: true }).isVisible();
+    const toggle = page.getByRole('button', { name: /^Comments \(/ });
+    if (!listOpen && (await toggle.isVisible())) await toggle.click();
+  };
 
   // Merge: words joined in order, the tapped anchor wins.
   await cards.nth(1).getByRole('button', { name: 'Merge with previous' }).click();
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Tapped');
-  await expect(cards.first().getByRole('textbox')).toHaveValue(
+  await expect(cards.first()).toContainText(
     'Overall this resume reads really clearly This heading needs a stronger verb',
   );
 
-  // Re-anchor: the sheet steps aside, the reviewer taps page 2, the sheet comes back.
-  await cards.first().getByRole('button', { name: 'Re-anchor' }).click();
+  // Move: the list steps aside (phone), the reviewer taps page 2, the comment moves there.
+  await cards.first().getByRole('button', { name: 'Move', exact: true }).click();
   await expect(page.getByText('Tap the spot this comment is about.')).toBeVisible();
   await page.locator('[data-page="2"]').scrollIntoViewIfNeeded();
   await page.getByRole('region', { name: 'Page 2' }).click({ position: { x: 100, y: 120 } });
+  await openList();
   await expect(cards.first()).toContainText('Page 2');
-  await cards
-    .first()
-    .getByRole('textbox')
-    .fill('Overall clear. The heading needs a stronger verb.');
-  await page.screenshot({ path: `test-results/shots/preview-edit-${info.project.name}.png` });
 
+  // Edit the words in the list.
+  await cards.first().getByRole('button', { name: 'Edit' }).click();
+  await page
+    .getByLabel('Your comment', { exact: true })
+    .fill('Overall clear. The heading needs a stronger verb.');
   const saved = page.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
-  await preview.getByRole('button', { name: 'Looks good' }).click();
+  await page.getByRole('button', { name: 'Save comment' }).click();
   await saved;
+  await openList();
+  await expect(cards.first()).toContainText('Overall clear. The heading needs a stronger verb.');
+  await page.screenshot({ path: `test-results/shots/list-edit-${info.project.name}.png` });
+  await closeList(page);
   await page.getByRole('button', { name: 'Submit' }).click();
   const sheet = page.getByRole('dialog', { name: 'Send your feedback' });
   await sheet.getByLabel('Your email').fill('kai@example.com');

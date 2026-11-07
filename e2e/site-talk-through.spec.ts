@@ -47,21 +47,17 @@ test('talk-through across two pages of a live site → correctly anchored commen
   await page.screenshot({ path: `test-results/shots/site-recording-${info.project.name}.png` });
 
   await setScript(page, SCRIPT);
+  const saved = page.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
   await page.getByRole('button', { name: 'Stop' }).click();
-  const preview = page.getByRole('dialog', { name: 'Here’s what we heard' });
-  await expect(preview).toBeVisible({ timeout: 15000 });
-  const cards = preview.getByTestId('proposed-comment');
-  await expect(cards).toHaveCount(2);
+  const cards = page.getByTestId('reviewer-comment');
+  await expect(cards).toHaveCount(2, { timeout: 15000 });
   // Untapped sentence: the (mock) AI places it on the home headline it names, from the home-page snapshot.
   await expect(cards.nth(0)).toContainText('Auto-placed');
   await expect(cards.nth(0)).toContainText('Home page');
   // Tapped sentence: anchored to what was tapped on /work.
   await expect(cards.nth(1)).toContainText('Tapped');
   await expect(cards.nth(1)).toContainText('/work');
-  await page.screenshot({ path: `test-results/shots/site-preview-${info.project.name}.png` });
-
-  const saved = page.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
-  await preview.getByRole('button', { name: 'Looks good' }).click();
+  await page.screenshot({ path: `test-results/shots/site-recorded-list-${info.project.name}.png` });
   await saved;
 
   const { data } = await admin()

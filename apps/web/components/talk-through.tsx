@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import type {
-  CommentDraft,
   Anchor,
   ProposedComment,
   RecordingStatus,
@@ -11,7 +10,6 @@ import type {
   TimelineTap,
 } from '@ft/shared';
 import { btn } from './ui';
-import { anchorLabel } from '@/lib/artifact';
 import { Recorder, requestMic } from '@/lib/client/recorder';
 import { snapshotPdf } from '@/lib/client/pdf-timeline';
 import {
@@ -24,7 +22,7 @@ import {
 
 /**
  * Talk-through (SPEC §3.2 steps 3–5). Audio is written to IndexedDB before upload and removed only
- * after the server ACKs; processing status is polled; results come back as a split preview.
+ * after the server ACKs; processing status is polled; results go straight into the reviewer's comment list (no separate preview step).
  */
 type Phase = 'idle' | 'consent' | 'recording' | 'uploading' | 'processing';
 type Notice = { tone: 'info' | 'warn'; text: string; typeInstead?: boolean } | null;
@@ -46,6 +44,8 @@ export function useTalkThrough(p: {
   inviteId: string;
   openRecordings: string[];
   knownClientIds: () => Set<string>;
+  /** A recording finished: its comments, to add to the list (the reviewer edits them there). */
+  onProposed: (items: ProposedComment[]) => void;
   /** Website: snapshots and taps arrive from the overlay (pushSnapshot/tap) instead of DOM polling. */
   external?: boolean;
 }) {
@@ -54,10 +54,7 @@ export function useTalkThrough(p: {
   const [paused, setPaused] = useState(false);
   const [taps, setTaps] = useState<TimelineTap[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
-  const [preview, setPreview] = useState<{ clientId: string; items: ProposedComment[] } | null>(
-    null,
-  );
-  /** Preview "Re-anchor": the sheet hides, the reviewer taps the PDF, the new anchor comes back. */
+  /** "Move" from the comment list: the reviewer taps the artifact, the new anchor comes back. */
   const [reanchor, setReanchor] = useState<{ clientId: string; anchor?: Anchor } | null>(null);
   const rec = useRef<Recorder | null>(null);
   const snaps = useRef<TimelineSnapshot[]>([]);
@@ -66,6 +63,8 @@ export function useTalkThrough(p: {
   const timers = useRef<ReturnType<typeof setInterval>[]>([]);
   /** Second safety net if IndexedDB is unavailable: retried from memory while the page is open. */
   const memory = useRef(new Map<string, StoredRecording>());
+  const latest = useRef(p);
+  latest.current = p;
 
   const snap = useCallback(() => {
     if (p.external) return;
@@ -103,8 +102,11 @@ export function useTalkThrough(p: {
           const known = p.knownClientIds();
           const items = st.proposed.filter((c) => !known.has(c.clientId));
           if (items.length) {
-            setNotice(null);
-            setPreview({ clientId, items });
+            latest.current.onProposed(items);
+            setNotice({
+              tone: 'info',
+              text: `Added ${items.length} comment${items.length === 1 ? '' : 's'} from your recording. Edit, move or delete any in your list.`,
+            });
           } else if (!st.proposed.length)
             setNotice({
               tone: 'warn',
@@ -328,8 +330,6 @@ export function useTalkThrough(p: {
     taps,
     notice,
     setNotice,
-    preview,
-    setPreview,
     reanchor,
     setReanchor,
     start,
@@ -432,151 +432,6 @@ export function ConsentSheet({ tt }: { tt: TalkThrough }) {
             <Dialog.Close className={btn.secondary}>Not now</Dialog.Close>
             <button className={btn.primary} onClick={() => void tt.agree()}>
               Start recording
-            </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
-/** Split preview (SPEC §3.2 step 5): edit text or delete, then "Looks good" saves them all. */
-export function PreviewSheet({
-  tt,
-  onAccept,
-}: {
-  tt: TalkThrough;
-  onAccept: (
-    keep: CommentDraft[],
-    discard: string[],
-    merges: { from: string; into: string }[],
-  ) => void;
-}) {
-  const [items, setItems] = useState<ProposedComment[]>([]);
-  const [removed, setRemoved] = useState<string[]>([]);
-  const [merges, setMerges] = useState<{ from: string; into: string }[]>([]);
-  const open = !!tt.preview && !tt.reanchor;
-  useEffect(() => {
-    setItems(tt.preview?.items ?? []);
-    setRemoved([]);
-    setMerges([]);
-  }, [tt.preview]);
-  // A re-anchor tap came back from the viewer: the reviewer pointed at it, so it's a tap anchor.
-  const { reanchor, setReanchor } = tt;
-  useEffect(() => {
-    if (!reanchor?.anchor) return;
-    const { clientId, anchor } = reanchor;
-    setItems((l) => l.map((x) => (x.clientId === clientId ? { ...x, anchor, source: 'tap' } : x)));
-    setReanchor(null);
-  }, [reanchor, setReanchor]);
-
-  /** Merge into the previous comment: words joined in order; the better anchor wins. */
-  function mergeUp(i: number) {
-    {
-      const l = items;
-      const prev = l[i - 1]!;
-      const cur = l[i]!;
-      const rank = { tap: 3, manual: 3, ai: 2, viewport: 1 } as const;
-      const keepCur = rank[cur.source] > rank[prev.source];
-      const merged: ProposedComment = {
-        ...prev,
-        text: `${prev.text.trim()} ${cur.text.trim()}`.trim(),
-        transcriptOriginal: `${prev.transcriptOriginal} ${cur.transcriptOriginal}`,
-        anchor: keepCur ? cur.anchor : prev.anchor,
-        source: keepCur ? cur.source : prev.source,
-        endMs: cur.endMs,
-      };
-      setMerges((m) => [...m, { from: cur.clientId, into: prev.clientId }]);
-      setItems([...l.slice(0, i - 1), merged, ...l.slice(i + 1)]);
-    }
-  }
-
-  function accept() {
-    const base = Date.now();
-    onAccept(
-      items
-        .filter((c) => c.text.trim())
-        .map((c, i) => ({
-          clientId: c.clientId,
-          text: c.text.trim(),
-          anchor: c.anchor,
-          general: false,
-          source: c.source,
-          sortKey: base + i,
-        })),
-      [...removed, ...items.filter((c) => !c.text.trim()).map((c) => c.clientId)],
-      merges,
-    );
-    tt.setPreview(null);
-  }
-
-  return (
-    <Dialog.Root open={open}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
-        <Dialog.Content
-          onEscapeKeyDown={(e) => e.preventDefault()}
-          onPointerDownOutside={(e) => e.preventDefault()}
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-xl bg-white shadow-2xl md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[32rem] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-xl"
-        >
-          <div className="border-b border-line p-4">
-            <Dialog.Title className="text-lg font-semibold">Here’s what we heard</Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-muted">
-              {items.length} comment{items.length === 1 ? '' : 's'}. Fix any words, or delete the
-              ones you don’t want.
-            </Dialog.Description>
-          </div>
-          <ol className="min-h-0 flex-1 divide-y divide-line overflow-auto">
-            {items.map((c, i) => (
-              <li key={c.clientId} className="p-4" data-testid="proposed-comment">
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <span className="rounded-full bg-paper px-2 py-0.5 font-medium text-ink ring-1 ring-line">
-                    {SOURCE_LABEL[c.source] ?? c.source}
-                  </span>
-                  {c.anchor && <span>{anchorLabel(c.anchor)}</span>}
-                  <button
-                    className="ml-auto underline"
-                    onClick={() => tt.setReanchor({ clientId: c.clientId })}
-                  >
-                    Re-anchor
-                  </button>
-                  {i > 0 && (
-                    <button className="underline" onClick={() => mergeUp(i)}>
-                      Merge with previous
-                    </button>
-                  )}
-                  <button
-                    className="text-red-700 underline"
-                    onClick={() => {
-                      setRemoved((r) => [...r, c.clientId]);
-                      setItems((l) => l.filter((x) => x.clientId !== c.clientId));
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-                <label className="sr-only" htmlFor={`proposed-${i}`}>
-                  Comment {i + 1}
-                </label>
-                <textarea
-                  id={`proposed-${i}`}
-                  rows={2}
-                  value={c.text}
-                  onChange={(e) =>
-                    setItems((l) =>
-                      l.map((x) =>
-                        x.clientId === c.clientId ? { ...x, text: e.target.value } : x,
-                      ),
-                    )
-                  }
-                  className="mt-2 w-full rounded-md border border-line p-2 text-base"
-                />
-              </li>
-            ))}
-          </ol>
-          <div className="flex justify-end gap-2 border-t border-line p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <button className={btn.primary} onClick={accept}>
-              Looks good
             </button>
           </div>
         </Dialog.Content>

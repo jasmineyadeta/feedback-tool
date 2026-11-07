@@ -141,7 +141,7 @@ test('keyboard only: pin a comment on a PDF page and on a live site; Escape canc
 });
 
 test('axe: recording consent, split preview, owner website feedback', async ({ browser, page }) => {
-  const { fakeMic, setScript } = await import('./helpers/talk');
+  const { closeList, fakeMic, setScript } = await import('./helpers/talk');
   await signInNewOwner(page);
   await createSiteReview(page, { url: 'http://localhost:4602/', title: 'A11y talk' });
   const reviewId = page.url().split('/').pop()!;
@@ -159,11 +159,12 @@ test('axe: recording consent, split preview, owner website feedback', async ({ b
   await expect(rev.getByRole('status', { name: 'Recording' })).toBeVisible();
   await scan(rev, 'recording bar');
   await setScript(rev, { text: 'grace builds data products is a great headline' });
+  const saved = rev.waitForResponse((r) => r.url().includes('/sync') && r.ok());
   await rev.getByRole('button', { name: 'Stop' }).click();
-  const preview = rev.getByRole('dialog', { name: 'Here’s what we heard' });
-  await expect(preview).toBeVisible({ timeout: 15000 });
-  await scan(rev, 'split preview');
-  await preview.getByRole('button', { name: 'Looks good' }).click();
+  await expect(rev.getByTestId('reviewer-comment')).toHaveCount(1, { timeout: 15000 });
+  await scan(rev, 'recorded comments in the list');
+  await saved;
+  await closeList(rev);
   await rev.getByRole('button', { name: 'Submit' }).click();
   await rev.getByRole('dialog').getByLabel('Your email').fill('ida@example.com');
   await rev.getByRole('dialog').getByRole('button', { name: 'Submit' }).click();

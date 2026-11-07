@@ -10,8 +10,8 @@ import { anchorLabel, quoteOf, type ReviewerArtifact } from '@/lib/artifact';
 import { btn } from './ui';
 import {
   ConsentSheet,
-  PreviewSheet,
   RecordingBar,
+  SOURCE_LABEL,
   TalkNotice,
   useTalkThrough,
 } from './talk-through';
@@ -65,6 +65,8 @@ export function ReviewerApp(p: Props) {
   const [composer, setComposer] = useState<Composer | null>(null);
   const [active, setActive] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  /** Comments that just arrived from a recording, highlighted for a moment. */
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [contextOpen, setContextOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [coach, setCoach] = useState(false);
@@ -192,10 +194,59 @@ export function ReviewerApp(p: Props) {
     openRecordings: readOnly ? [] : p.openRecordings,
     knownClientIds: () =>
       new Set([...Object.keys(ref.current.comments), ...Object.keys(ref.current.queue)]),
+    onProposed: (items) => {
+      // Straight into the list; the reviewer edits, moves or deletes them there.
+      const base = Date.now();
+      let next = ref.current;
+      items.forEach((c, i) => {
+        next = upsert(next, {
+          clientId: c.clientId,
+          text: c.text,
+          anchor: c.anchor,
+          general: false,
+          source: c.source,
+          sortKey: base + i,
+        });
+      });
+      commit(next);
+      setFresh(new Set(items.map((c) => c.clientId)));
+      setListOpen(true);
+    },
     external: art.kind !== 'pdf',
   });
   const recording = tt.phase === 'recording';
   const reanchoring = !!tt.reanchor && !tt.reanchor.anchor;
+
+  // "Move" came back with the spot the reviewer tapped: they pointed at it, so it's a tap anchor.
+  const { reanchor, setReanchor } = tt;
+  useEffect(() => {
+    if (!reanchor?.anchor) return;
+    const c = ref.current.comments[reanchor.clientId];
+    if (c) commit(upsert(ref.current, { ...c, anchor: reanchor.anchor, source: 'tap' }));
+    setActive(reanchor.clientId);
+    setReanchor(null);
+  }, [reanchor, setReanchor, commit]);
+
+  useEffect(() => {
+    if (!fresh.size) return;
+    const t = setTimeout(() => setFresh(new Set()), 4000);
+    return () => clearTimeout(t);
+  }, [fresh]);
+
+  /** Merge a recorded comment into the one above: words joined in order, the better anchor wins. */
+  function mergeUp(prev: CommentDraft, cur: CommentDraft) {
+    const rank = { tap: 3, manual: 3, ai: 2, viewport: 1 } as const;
+    const keepCur = rank[cur.source ?? 'manual'] > rank[prev.source ?? 'manual'];
+    let next = mergeInto(ref.current, cur.clientId, prev.clientId);
+    next = upsert(next, {
+      ...prev,
+      text: `${prev.text.trim()} ${cur.text.trim()}`.trim(),
+      anchor: keepCur ? cur.anchor : prev.anchor,
+      source: keepCur ? cur.source : prev.source,
+    });
+    commit(next);
+  }
+  const fromRecording = (c: CommentDraft) => !!c.source && c.source !== 'manual';
   const tapMarkers: PdfMarker[] = tt.taps.flatMap((t, i) =>
     t.fullAnchor.kind === 'pdf'
       ? [{ id: `tap-${i}`, n: i + 1, anchor: t.fullAnchor, active: true, label: `Tap ${i + 1}` }]
@@ -232,6 +283,7 @@ export function ReviewerApp(p: Props) {
         anchor: composer.anchor,
         general: false,
         sortKey: prev?.sortKey ?? Date.now(),
+        ...(prev?.source ? { source: prev.source } : {}), // editing words keeps "Tapped" etc.
       }),
     );
     setComposer(null);
@@ -447,12 +499,17 @@ export function ReviewerApp(p: Props) {
             {list.map((c, i) => (
               <li
                 key={c.clientId}
-                className={`p-4 text-sm ${active === c.clientId ? 'bg-blue-50' : ''}`}
+                className={`p-4 text-sm transition-colors duration-700 ${active === c.clientId ? 'bg-blue-50' : fresh.has(c.clientId) ? 'bg-amber-50' : ''}`}
                 data-testid="reviewer-comment"
               >
                 <button className="block w-full text-left" onClick={() => focusComment(c.clientId)}>
                   <span className="text-xs text-muted">
                     {i + 1} · {anchorLabel(c.anchor)}
+                    {fromRecording(c) && (
+                      <span className="ml-1.5 rounded-full bg-paper px-1.5 py-0.5 font-medium text-ink ring-1 ring-line">
+                        {SOURCE_LABEL[c.source!]}
+                      </span>
+                    )}
                     {state.queue[c.clientId] ? ' · not synced yet' : ''}
                   </span>
                   {quoteOf(c.anchor) && (
@@ -472,6 +529,23 @@ export function ReviewerApp(p: Props) {
                     >
                       Edit
                     </button>
+                    {c.anchor && (
+                      <button
+                        className="underline"
+                        disabled={busyRecording}
+                        onClick={() => {
+                          setListOpen(false);
+                          tt.setReanchor({ clientId: c.clientId });
+                        }}
+                      >
+                        Move
+                      </button>
+                    )}
+                    {i > 0 && fromRecording(c) && fromRecording(list[i - 1]!) && (
+                      <button className="underline" onClick={() => mergeUp(list[i - 1]!, c)}>
+                        Merge with previous
+                      </button>
+                    )}
                     <button
                       className="text-red-700 underline"
                       onClick={() => commit(remove(ref.current, c.clientId))}
@@ -592,16 +666,6 @@ export function ReviewerApp(p: Props) {
       )}
 
       <ConsentSheet tt={tt} />
-      <PreviewSheet
-        tt={tt}
-        onAccept={(keep, discard, merges) => {
-          let next = ref.current;
-          for (const m of merges) next = mergeInto(next, m.from, m.into);
-          for (const c of keep) next = upsert(next, c);
-          for (const id of discard) next = remove(next, id);
-          commit(next);
-        }}
-      />
       <SubmitSheet
         open={submitOpen}
         onOpenChange={setSubmitOpen}

@@ -64,3 +64,9 @@ export async function startRecording(page: Page) {
     await consent.getByRole('button', { name: 'Start recording' }).click();
   await expect(page.getByRole('status', { name: 'Recording' })).toBeVisible();
 }
+
+/** On a phone, recorded comments open the comment sheet; close it to reach the action bar. */
+export async function closeList(p: Page) {
+  const close = p.getByRole('button', { name: 'Close', exact: true });
+  if (await close.isVisible()) await close.click();
+}

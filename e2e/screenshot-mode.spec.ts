@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { admin, createInvite, createSiteReview, signInNewOwner } from './helpers/owner';
-import { fakeMic, setScript, startRecording } from './helpers/talk';
+import { closeList, fakeMic, setScript, startRecording } from './helpers/talk';
 
 // The mock ScreenshotService fails the headless check for URLs containing "fail-health".
 const URL = 'http://localhost:4601/?fail-health';
@@ -51,16 +51,17 @@ test('Screenshot mode is labelled to the reviewer and the owner; comments and ta
         .map((w, i) => ({ w, start: 50 + i * 0.4, end: 50 + i * 0.4 + 0.3 })),
     ],
   });
-  await rev.getByRole('button', { name: 'Stop' }).click();
-  const preview = rev.getByRole('dialog', { name: 'Here’s what we heard' });
-  const cards = preview.getByTestId('proposed-comment');
-  await expect(cards).toHaveCount(2, { timeout: 15000 });
-  await expect(cards.nth(0)).toContainText('On screen');
-  await expect(cards.nth(1)).toContainText('Tapped');
-  await expect(cards.nth(1)).toContainText('Screenshot');
   const saved = rev.waitForResponse((r) => r.url().includes('/sync') && r.status() === 200);
-  await preview.getByRole('button', { name: 'Looks good' }).click();
+  await rev.getByRole('button', { name: 'Stop' }).click();
+  const onScreen = rev
+    .getByTestId('reviewer-comment')
+    .filter({ hasText: 'Overall this looks clean' });
+  const tapped = rev.getByTestId('reviewer-comment').filter({ hasText: 'This part needs a photo' });
+  await expect(onScreen).toContainText('On screen', { timeout: 15000 });
+  await expect(tapped).toContainText('Tapped');
+  await expect(tapped).toContainText('Screenshot');
   await saved;
+  await closeList(rev);
 
   await rev.getByRole('button', { name: 'Submit' }).click();
   const sheet = rev.getByRole('dialog', { name: 'Send your feedback' });

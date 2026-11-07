@@ -18,7 +18,7 @@ Things automation can't cover (real devices, real mic). Each has steps and what 
 - [ ] With `pnpm dev:phone` running, open a PDF reviewer link on the **iPhone (Safari)**. Tap **Record**, read the disclosure, **Start recording**, allow the mic.
   - Good: red dot + timer; Pause/Resume work; tapping the PDF shows numbered "Tap" markers.
 - [ ] Say two sentences, tapping a heading before the second, then **Stop**.
-  - Good: within ~10 s "Here's what we heard" shows two comments; the second is "Tapped" with your words (not reworded).
+  - Good: within ~10 s two comments appear in "Your comments"; the second is "Tapped" with your words (not reworded).
 - [ ] Repeat on the **iPad**.
 - [ ] Deny the mic once (Settings → Safari → Microphone → Deny), tap Record.
   - Good: "Your microphone is blocked…" with **Type a comment**.
@@ -49,6 +49,10 @@ The agent can open pages in the Simulator but can't tap or talk in it. Left for 
 
 ## Talk-through follows the view (2026-11-06)
 - [ ] On a long website, **Record**, talk about the top, scroll down and talk about the next section, scroll again and talk, then **Stop**, without tapping.
-  - Good: "Here's what we heard" shows one comment per section, each with your exact words. In the owner view, each comment jumps to the part of the page you were looking at. Names like "Vietnam" come out as one word.
+  - Good: "Your comments" shows one comment per section, each with your exact words. In the owner view, each comment jumps to the part of the page you were looking at. Names like "Vietnam" come out as one word.
 - [ ] Open that review's **Feedback** on the laptop and scroll the site.
   - Good: every comment has a number on the page (outline for taps, a band on the right edge for "On screen"), beside what you were talking about. Clicking a number highlights that comment in the list.
+
+## Recorded comments go straight to the list (2026-11-06)
+- [ ] Record, then **Stop**. On the laptop and on the phone (Simulator is fine).
+  - Good: no extra screen. The new comments appear highlighted in **Your comments** (the list opens on a phone). **Edit** keeps the "Tapped"/"Auto-placed" label; **Move** then tapping a new spot moves it; **Merge with previous** joins two recorded comments.
