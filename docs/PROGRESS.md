@@ -89,6 +89,8 @@ From SPEC §8: one checkbox per acceptance criterion. *Manual* items are listed 
 
 **Manual checks pending for Jas:** the interactive full review (Simulator is OK), plus the earlier M2–M4 checks. **Decisions for M7:** see `docs/PHASE_B_PLAN.md` §1.
 
+**Decided by Jas (2026-11-06):** B1 = (b), a separate proxy domain. Accepted as designed: links navigate while recording on a live site; Screenshot mode covers the entry page only; keyboard users pick links and buttons (not plain text) on live sites. Contact email stays a placeholder until Jas sets `CONTACT_EMAIL`.
+
 ### M5 — done (2026-11-04)
 **Works:** link-only owner email on submit (plain + HTML, self-reported name flattened/escaped, "your site"/"your PDF"); invite statuses per D20 verified end to end (opening a link isn't tracked); mark addressed + general note (from M2); `pnpm smoke:mail` proves the local Mailer reaches the local inbox. Accessibility: axe gate (zero serious/critical) over 20 page states in both browsers; focusable scroll regions; keyboard-only commenting on PDFs, live sites (Enter on focused site controls, overlay 0.3.0) and screenshots; Escape cancels; screen-reader hints; site-wide not-found and error pages; slow-site message after 15 s.
 **Doesn't yet:** keyboard can only pick focusable elements on live sites; no route loading skeleton (it broke 404 status codes).

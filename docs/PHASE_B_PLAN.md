@@ -6,7 +6,7 @@ Written at the end of Phase A (2026-11-04). **Nothing here starts until Jas says
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
-| B1 | **Domain for reviewed sites.** SPEC §6 puts each review on `{rid}.view.{DOMAIN}`, under the same domain as the app. | (a) As specced. A wildcard two levels deep is not covered by Cloudflare's free certificate (**verify**; Advanced Certificate Manager is paid). (b) `{rid}.{PROXY_DOMAIN}` on a **second, separate domain** (about $10/yr). Covered by the free wildcard certificate, and the candidate's site can't set cookies that the app's domain would read. | **(b).** It's cheaper than (a) and safer, and it's a change to the security model (origin isolation), so it needs Jas's sign-off. |
+| B1 | **Domain for reviewed sites.** SPEC §6 puts each review on `{rid}.view.{DOMAIN}`, under the same domain as the app. | (a) As specced. A wildcard two levels deep is not covered by Cloudflare's free certificate (**verify**; Advanced Certificate Manager is paid). (b) `{rid}.{PROXY_DOMAIN}` on a **second, separate domain** (about $10/yr). Covered by the free wildcard certificate, and the candidate's site can't set cookies that the app's domain would read. | **Decided: (b)** (Jas, 2026-11-06). Buy two domains at M7: the app domain and a separate proxy domain. |
 | B2 | Who gets the takedown and privacy emails (`CONTACT_EMAIL`). | Personal address, or a new alias on the domain. | An alias on the domain, forwarded with Cloudflare Email Routing (free). |
 | B3 | Speech-to-text and AI provider. | Workers AI (D14/D15), or Groq as backup. | Workers AI. Re-run `pnpm eval:anchors` first; it must reach ≥80%. |
 | B4 | Error monitoring. | Sentry (optional), or none. | None for the first 20 candidates. Server logs are enough. |
